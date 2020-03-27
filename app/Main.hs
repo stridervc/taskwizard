@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import Task
 
 main :: IO ()
-main = someFunc
+main = do
+  putStrLn "Hello Task Wizard!"
