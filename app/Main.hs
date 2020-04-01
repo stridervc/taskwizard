@@ -4,4 +4,4 @@ import Task
 
 main :: IO ()
 main = do
-  putStrLn $ show $ taskFromString 1 "Test task"
+  putStrLn $ show $ addTask [] "Test task"

@@ -4,6 +4,9 @@ module Task
   , Task (..)
   , Action
   , taskFromString
+  , uuidExists
+  , nextUuid
+  , addTask
   ) where
 
 type Desc = String
@@ -23,3 +26,17 @@ taskFromString x s = Just Task
   { uuid = x
   , desc = s
   }
+
+uuidExists :: [Task] -> ID -> Bool
+uuidExists ts i = foldr (\x acc -> if uuid x == i then True else acc) False ts
+
+nextUuid :: [Task] -> ID
+nextUuid [] = 1
+nextUuid ts = head $ dropWhile (uuidExists ts) [1..]
+
+addTask :: [Task] -> Desc -> [Task]
+addTask ts d = t:ts
+  where t = Task  { uuid = nextUuid ts
+                  , desc = d
+                  }
+
