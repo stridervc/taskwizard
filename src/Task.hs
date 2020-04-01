@@ -3,10 +3,10 @@ module Task
   , ID
   , Task (..)
   , Action
-  , taskFromString
   , uuidExists
   , nextUuid
   , addTask
+  , dropTask
   ) where
 
 type Desc = String
@@ -20,23 +20,20 @@ data Task = Task
 data Action = Add Desc
             | Done ID
 
-taskFromString :: ID -> String -> Maybe Task
-taskFromString _ [] = Nothing
-taskFromString x s = Just Task
-  { uuid = x
-  , desc = s
-  }
-
 uuidExists :: [Task] -> ID -> Bool
-uuidExists ts i = foldr (\x acc -> if uuid x == i then True else acc) False ts
+uuidExists ts i = foldr (\t acc -> if uuid t == i then True else acc) False ts
 
 nextUuid :: [Task] -> ID
 nextUuid [] = 1
 nextUuid ts = head $ dropWhile (uuidExists ts) [1..]
 
+-- add a task to a list of tasks
 addTask :: [Task] -> Desc -> [Task]
 addTask ts d = t:ts
   where t = Task  { uuid = nextUuid ts
                   , desc = d
                   }
 
+-- remove task with id from list of tasks
+dropTask :: [Task] -> ID -> [Task]
+dropTask ts i = foldr (\t acc -> if i == uuid t then acc else t:acc) [] ts
