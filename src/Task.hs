@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Task
   ( Desc
   , ID
@@ -11,16 +13,33 @@ module Task
   , printTasks
   ) where
 
+import GHC.Generics (Generic)
+import Data.Binary
+
 type Desc = String
 type ID   = Integer
 
 data Task = Task
   { uuid :: ID
   , desc :: Desc
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 data Action = Add Desc
-            | Done ID
+            | Exact Task
+            | Drop ID
+            deriving (Eq, Show, Generic)
+
+instance Binary Task
+instance Binary Action
+
+-- apply an action to a list of tasks
+applyAction :: [Task] -> Action -> Either String [Task]
+applyAction ts (Add d)    = Right $ addTask ts d
+applyAction ts (Exact t)  = Right $ addExactTask ts t
+applyAction ts (Drop i)   = if uuidExists ts i then
+                              Right $ dropTask ts i
+                            else
+                              Left "Task ID does not exist"
 
 uuidExists :: [Task] -> ID -> Bool
 uuidExists ts i = foldr (\t acc -> if uuid t == i then True else acc) False ts

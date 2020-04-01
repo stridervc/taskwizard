@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aa34c798b37c2100c85445bbded4c543e85c6b8eb66f8ae73c473c502a1a4a21
+-- hash: 4a669065b13470f5ff12b2d96699fbe1ee1d5543e79b92b20cf1f698e5e20a28
 
 name:           taskwizard
 version:        0.1.0.0
@@ -27,7 +27,6 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
       Task
   other-modules:
       Paths_taskwizard
@@ -46,6 +45,8 @@ executable taskwizard
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , binary
+    , directory
     , taskwizard
   default-language: Haskell2010
 
