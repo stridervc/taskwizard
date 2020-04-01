@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4a669065b13470f5ff12b2d96699fbe1ee1d5543e79b92b20cf1f698e5e20a28
+-- hash: 270d797649a4bacf971db268b9c4558023eaf3b5c7c8071ef99cd6770d3db597
 
 name:           taskwizard
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , binary
   default-language: Haskell2010
 
 executable taskwizard

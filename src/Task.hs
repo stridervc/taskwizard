@@ -4,13 +4,15 @@ module Task
   ( Desc
   , ID
   , Task (..)
-  , Action
+  , Action (..)
   , uuidExists
   , nextUuid
   , addTask
   , dropTask
   , printTask
   , printTasks
+  , applyAction
+  , applyActions
   ) where
 
 import GHC.Generics (Generic)
@@ -40,6 +42,19 @@ applyAction ts (Drop i)   = if uuidExists ts i then
                               Right $ dropTask ts i
                             else
                               Left "Task ID does not exist"
+
+applyActions' :: [Task] -> [Action] -> [Either String [Task]]
+applyActions' ts [] = [Right ts]
+applyActions' ts (a:as) = applyAction ts a : applyActions' ts as
+
+applyActions :: [Task] -> [Action] -> Either String [Task]
+applyActions ts as =
+  case sequence $ applyActions' ts as of
+    Left x -> Left x
+    Right tss -> Right $ concat tss
+
+--applyActions ts as =
+--  sequence $ foldl (\a acc -> applyAction a acc) ts as
 
 uuidExists :: [Task] -> ID -> Bool
 uuidExists ts i = foldr (\t acc -> if uuid t == i then True else acc) False ts
