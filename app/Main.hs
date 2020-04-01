@@ -26,6 +26,8 @@ main = do
 
   -- TODO fix bug with duplicate UUID when adding task
   -- it's in applyActions
+  -- No, it's because I should convert Add actions to
+  -- AddExact actions
   
   filename <- taskFilename
   loadres <- loadActions filename
