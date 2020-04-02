@@ -49,7 +49,7 @@ applyAction ts (Done i)   = doTask ts i
 
 applyActions :: Tasks -> Actions -> Tasks
 applyActions ts [] = ts
-applyActions ts (a:as) = applyActions (applyAction ts a) as
+applyActions ts as = foldl applyAction ts as
 
 uuidExists :: Tasks -> ID -> Bool
 uuidExists ts i = foldr (\t acc -> if uuid t == i then True else acc) False ts
