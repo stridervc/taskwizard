@@ -13,7 +13,6 @@ module Task
   , deleteTask
   , printTask
   , printTasks
-  , printTasksFromActions
   , applyAction
   , applyActions
   , stringToExact
@@ -41,25 +40,13 @@ instance Binary Task
 instance Binary Action
 
 -- apply an action to a list of tasks
-applyAction :: Tasks -> Action -> Either String Tasks
-applyAction ts (Exact t)  = Right $ addExactTask ts t
-applyAction ts (Delete i) = if uuidExists ts i then
-                              Right $ deleteTask ts i
-                            else
-                              Left "Task ID does not exist"
+applyAction :: Tasks -> Action -> Tasks
+applyAction ts (Exact t)  = addExactTask ts t
+applyAction ts (Delete i) = deleteTask ts i
 
-applyActions' :: Tasks -> Actions -> [Either String Tasks]
-applyActions' ts [] = [Right ts]
-applyActions' ts (a:as) = applyAction ts a : applyActions' ts as
-
-applyActions :: Tasks -> Actions -> Either String Tasks
-applyActions ts as =
-  case sequence $ applyActions' ts as of
-    Left x -> Left x
-    Right tss -> Right $ concat tss
-
---applyActions ts as =
---  sequence $ foldl (\a acc -> applyAction a acc) ts as
+applyActions :: Tasks -> Actions -> Tasks
+applyActions ts [] = ts
+applyActions ts (a:as) = applyActions (applyAction ts a) as
 
 uuidExists :: Tasks -> ID -> Bool
 uuidExists ts i = foldr (\t acc -> if uuid t == i then True else acc) False ts
@@ -96,10 +83,3 @@ printTasks :: Tasks -> IO ()
 printTasks [] = return ()
 printTasks ts = mapM_ printTask ts
 
-printTasksFromActions :: Actions -> IO ()
-printTasksFromActions [] = return ()
-printTasksFromActions as = do
-  let tasks = applyActions [] as
-  case tasks of
-    Left e -> putStrLn e
-    Right ts -> printTasks ts

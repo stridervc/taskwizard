@@ -30,27 +30,22 @@ main = do
     Left (offset, error) -> putStrLn error
     Right actions -> do
       let tasks = applyActions [] actions
-      case tasks of
-        Left e -> do
-          putStrLn e
-          putStrLn $ show actions
-        Right tasks -> do
-          case length args of
-            0 -> printTasks tasks
-            otherwise -> do
-              case args!!0 of
-                "add" -> do
-                  let a = stringToExact tasks $ unwords $ tail args
-                  let as = actions ++ [a]
+      case length args of
+        0 -> printTasks tasks
+        otherwise -> do
+          case args!!0 of
+            "add" -> do
+              let a = stringToExact tasks $ unwords $ tail args
+              let as = actions ++ [a]
+              encodeFile filename as
+
+            "delete" -> do
+              let id = read $ args!!1
+              case uuidExists tasks id of
+                False -> putStrLn "Task ID doesn't exist"
+                True  -> do
+                  let as = actions ++ [Delete id]
                   encodeFile filename as
 
-                "delete" -> do
-                  let id = read $ args!!1
-                  case (applyAction tasks (Delete id)) of
-                    Left e -> putStrLn e
-                    Right _ -> do
-                      let as = actions ++ [Delete id]
-                      encodeFile filename as
-
-                otherwise -> do
-                  putStrLn $ "Unknown action: " ++ args!!0
+            otherwise -> do
+              putStrLn $ "Unknown action: " ++ args!!0
