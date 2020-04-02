@@ -7,12 +7,14 @@ module Task
   , Action (..)
   , uuidExists
   , nextUuid
-  , addTask
+  , addExactTask
   , dropTask
   , printTask
   , printTasks
+  , printTasksFromActions
   , applyAction
   , applyActions
+  , stringToExact
   ) where
 
 import GHC.Generics (Generic)
@@ -26,8 +28,7 @@ data Task = Task
   , desc :: Desc
   } deriving (Eq, Show, Generic)
 
-data Action = Add Desc
-            | Exact Task
+data Action = Exact Task
             | Drop ID
             deriving (Eq, Show, Generic)
 
@@ -36,7 +37,6 @@ instance Binary Action
 
 -- apply an action to a list of tasks
 applyAction :: [Task] -> Action -> Either String [Task]
-applyAction ts (Add d)    = Right $ addTask ts d
 applyAction ts (Exact t)  = Right $ addExactTask ts t
 applyAction ts (Drop i)   = if uuidExists ts i then
                               Right $ dropTask ts i
@@ -68,12 +68,12 @@ nextUuid ts = head $ dropWhile (uuidExists ts) [1..]
 addExactTask :: [Task] -> Task -> [Task]
 addExactTask ts t = t:ts
 
--- add a task to a list of tasks
-addTask :: [Task] -> Desc -> [Task]
-addTask ts d = t:ts
-  where t = Task  { uuid = nextUuid ts
-                  , desc = d
-                  }
+-- convert from desc string to an Exact action
+stringToExact :: [Task] -> String -> Action
+stringToExact ts d =
+  Exact Task  { uuid = nextUuid ts
+              , desc = d
+              }
 
 -- remove task with id from list of tasks
 dropTask :: [Task] -> ID -> [Task]
@@ -91,3 +91,10 @@ printTasks :: [Task] -> IO ()
 printTasks [] = return ()
 printTasks ts = mapM_ printTask ts
 
+printTasksFromActions :: [Action] -> IO ()
+printTasksFromActions [] = return ()
+printTasksFromActions as = do
+  let tasks = applyActions [] as
+  case tasks of
+    Left e -> putStrLn e
+    Right ts -> printTasks ts

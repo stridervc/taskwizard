@@ -24,11 +24,6 @@ main :: IO ()
 main = do
   args <- getArgs
 
-  -- TODO fix bug with duplicate UUID when adding task
-  -- it's in applyActions
-  -- No, it's because I should convert Add actions to
-  -- AddExact actions
-  
   filename <- taskFilename
   loadres <- loadActions filename
   case loadres of
@@ -43,5 +38,6 @@ main = do
             otherwise -> do
               case args!!0 of
                 "add" -> do
-                  let as = actions ++ [Add $ concat $ tail args]
+                  let a = stringToExact tasks $ unwords $ tail args
+                  let as = actions ++ [a]
                   encodeFile filename as
