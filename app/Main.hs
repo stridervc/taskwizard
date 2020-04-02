@@ -47,5 +47,13 @@ main = do
                   let as = actions ++ [Delete id]
                   encodeFile filename as
 
+            "done" -> do
+              let id = read $ args!!1
+              case uuidExists tasks id of
+                False -> putStrLn "Task ID doesn't exist"
+                True  -> do
+                  let as = actions ++ [Done id]
+                  encodeFile filename as
+
             otherwise -> do
               putStrLn $ "Unknown action: " ++ args!!0
