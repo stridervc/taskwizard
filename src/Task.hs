@@ -3,12 +3,14 @@
 module Task
   ( Desc
   , ID
+  , Tasks
+  , Actions
   , Task (..)
   , Action (..)
   , uuidExists
   , nextUuid
   , addExactTask
-  , dropTask
+  , deleteTask
   , printTask
   , printTasks
   , printTasksFromActions
@@ -23,31 +25,34 @@ import Data.Binary
 type Desc = String
 type ID   = Integer
 
+type Tasks = [Task]
+type Actions = [Action]
+
 data Task = Task
   { uuid :: ID
   , desc :: Desc
   } deriving (Eq, Show, Generic)
 
 data Action = Exact Task
-            | Drop ID
+            | Delete ID
             deriving (Eq, Show, Generic)
 
 instance Binary Task
 instance Binary Action
 
 -- apply an action to a list of tasks
-applyAction :: [Task] -> Action -> Either String [Task]
+applyAction :: Tasks -> Action -> Either String Tasks
 applyAction ts (Exact t)  = Right $ addExactTask ts t
-applyAction ts (Drop i)   = if uuidExists ts i then
-                              Right $ dropTask ts i
+applyAction ts (Delete i) = if uuidExists ts i then
+                              Right $ deleteTask ts i
                             else
                               Left "Task ID does not exist"
 
-applyActions' :: [Task] -> [Action] -> [Either String [Task]]
+applyActions' :: Tasks -> Actions -> [Either String Tasks]
 applyActions' ts [] = [Right ts]
 applyActions' ts (a:as) = applyAction ts a : applyActions' ts as
 
-applyActions :: [Task] -> [Action] -> Either String [Task]
+applyActions :: Tasks -> Actions -> Either String Tasks
 applyActions ts as =
   case sequence $ applyActions' ts as of
     Left x -> Left x
@@ -56,28 +61,28 @@ applyActions ts as =
 --applyActions ts as =
 --  sequence $ foldl (\a acc -> applyAction a acc) ts as
 
-uuidExists :: [Task] -> ID -> Bool
+uuidExists :: Tasks -> ID -> Bool
 uuidExists ts i = foldr (\t acc -> if uuid t == i then True else acc) False ts
 
-nextUuid :: [Task] -> ID
+nextUuid :: Tasks -> ID
 nextUuid [] = 1
 nextUuid ts = head $ dropWhile (uuidExists ts) [1..]
 
 -- helper function, add task with all fields provided
 -- will be used when loading tasks from file
-addExactTask :: [Task] -> Task -> [Task]
+addExactTask :: Tasks -> Task -> Tasks
 addExactTask ts t = t:ts
 
 -- convert from desc string to an Exact action
-stringToExact :: [Task] -> String -> Action
+stringToExact :: Tasks -> String -> Action
 stringToExact ts d =
   Exact Task  { uuid = nextUuid ts
               , desc = d
               }
 
 -- remove task with id from list of tasks
-dropTask :: [Task] -> ID -> [Task]
-dropTask ts i = foldr (\t acc -> if i == uuid t then acc else t:acc) [] ts
+deleteTask :: Tasks -> ID -> Tasks
+deleteTask ts i = foldr (\t acc -> if i == uuid t then acc else t:acc) [] ts
 
 -- print task
 printTask :: Task -> IO ()
@@ -87,11 +92,11 @@ printTask t = do
         d = desc t
 
 -- print tasks
-printTasks :: [Task] -> IO ()
+printTasks :: Tasks -> IO ()
 printTasks [] = return ()
 printTasks ts = mapM_ printTask ts
 
-printTasksFromActions :: [Action] -> IO ()
+printTasksFromActions :: Actions -> IO ()
 printTasksFromActions [] = return ()
 printTasksFromActions as = do
   let tasks = applyActions [] as
