@@ -41,3 +41,6 @@ main = do
                   let a = stringToExact tasks $ unwords $ tail args
                   let as = actions ++ [a]
                   encodeFile filename as
+
+                otherwise -> do
+                  putStrLn $ "Unknown action: " ++ args!!0
