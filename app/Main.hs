@@ -31,7 +31,9 @@ main = do
     Right actions -> do
       let tasks = applyActions [] actions
       case tasks of
-        Left e -> putStrLn e
+        Left e -> do
+          putStrLn e
+          putStrLn $ show actions
         Right tasks -> do
           case length args of
             0 -> printTasks tasks
@@ -41,6 +43,14 @@ main = do
                   let a = stringToExact tasks $ unwords $ tail args
                   let as = actions ++ [a]
                   encodeFile filename as
+
+                "delete" -> do
+                  let id = read $ args!!1
+                  case (applyAction tasks (Delete id)) of
+                    Left e -> putStrLn e
+                    Right _ -> do
+                      let as = actions ++ [Delete id]
+                      encodeFile filename as
 
                 otherwise -> do
                   putStrLn $ "Unknown action: " ++ args!!0
