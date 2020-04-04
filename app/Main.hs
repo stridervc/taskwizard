@@ -41,7 +41,7 @@ main = do
 
             "delete" -> do
               let id = read $ args!!1
-              case uuidExists tasks id of
+              case uidExists tasks id of
                 False -> putStrLn "Task ID doesn't exist"
                 True  -> do
                   let as = actions ++ [Delete id]
@@ -49,7 +49,7 @@ main = do
 
             "done" -> do
               let id = read $ args!!1
-              case uuidExists tasks id of
+              case uidExists tasks id of
                 False -> putStrLn "Task ID doesn't exist"
                 True  -> do
                   let as = actions ++ [Done id]
