@@ -60,7 +60,7 @@ newTask i = Task  { uid = i
 -- parse and add a task to tasks
 parseAddTask :: Tasks -> String -> Tasks
 parseAddTask ts s = t:ts
-  where t   = foldl applyIfIsProperty t' w
+  where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
         t'' = newTask $ nextUid ts
         w   = words s
@@ -89,8 +89,8 @@ isProperty s = do
 -- take a task and a string
 -- if the string is a known property (eg uid:1)
 -- then apply the property to the task
-applyIfIsProperty :: Task -> String -> Task
-applyIfIsProperty t s
+applyProperty :: Task -> String -> Task
+applyProperty t s
   | isProperty s  = do
     let Just (k,v) = splitProperty s
     case k of
