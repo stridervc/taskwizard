@@ -24,8 +24,6 @@ dependencies:
 
 library:
   source-dirs: src
-  dependencies:
-  - binary
 
 executables:
   taskwizard:
@@ -38,7 +36,7 @@ executables:
     dependencies:
     - taskwizard
     - directory
-    - binary
+    - strict
 
 tests:
   taskwizard-test:

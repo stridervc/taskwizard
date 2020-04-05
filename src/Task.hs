@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Task
   ( Desc
   , ID
@@ -9,18 +7,16 @@ module Task
   , Action (..)
   , uidExists
   , nextUid
-  , addExactTask
   , deleteTask
   , printTask
   , printTasks
   , applyAction
   , applyActions
-  , stringToExact
   , parseAddTask
+  , dumpTasks
+  , unDumpTasks
+  , doTask
   ) where
-
-import GHC.Generics (Generic)
-import Data.Binary
 
 type Desc   = String
 type ID     = Integer
@@ -34,15 +30,12 @@ data Task = Task
   { uid     :: ID
   , desc    :: Desc
   , isdone  :: Bool
-  } deriving (Eq, Generic)
+  } deriving (Eq)
 
-data Action = Exact Task
+data Action = Add String
             | Delete ID
             | Done ID
-            deriving (Eq, Show, Generic)
-
-instance Binary Task
-instance Binary Action
+            deriving (Eq, Show)
 
 -- custom show for task, used for saving
 instance Show Task where
@@ -101,7 +94,7 @@ applyProperty t s
 
 -- apply an action to a list of tasks
 applyAction :: Tasks -> Action -> Tasks
-applyAction ts (Exact t)  = addExactTask ts t
+applyAction ts (Add s)  = parseAddTask ts s
 applyAction ts (Delete i) = deleteTask ts i
 applyAction ts (Done i)   = doTask ts i
 
@@ -114,19 +107,6 @@ uidExists ts i = foldr (\t acc -> if uid t == i then True else acc) False ts
 nextUid :: Tasks -> ID
 nextUid [] = 1
 nextUid ts = head $ dropWhile (uidExists ts) [1..]
-
--- helper function, add task with all fields provided
--- will be used when loading tasks from file
-addExactTask :: Tasks -> Task -> Tasks
-addExactTask ts t = t:ts
-
--- convert from desc string to an Exact action
-stringToExact :: Tasks -> String -> Action
-stringToExact ts d =
-  Exact Task  { uid     = nextUid ts
-              , desc    = d
-              , isdone  = False
-              }
 
 -- remove task with id from list of tasks
 deleteTask :: Tasks -> ID -> Tasks
@@ -151,4 +131,11 @@ printTask t = do
 printTasks :: Tasks -> IO ()
 printTasks [] = return ()
 printTasks ts = mapM_ printTask $ filter (not . isdone) ts
+
+-- dump tasks to list of strings, for saving to file
+dumpTasks :: Tasks -> [String]
+dumpTasks = map show
+
+unDumpTasks :: [String] -> Tasks
+unDumpTasks = foldl parseAddTask []
 
