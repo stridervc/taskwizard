@@ -8,14 +8,18 @@ module Task
   , uidExists
   , nextUid
   , deleteTask
+  , doTask
   , printTask
   , printTasks
   , applyAction
   , applyActions
+  , tasksFromActions
   , parseAddTask
+  , parseAction
   , dumpTasks
   , unDumpTasks
-  , doTask
+  , dumpActions
+  , unDumpActions
   ) where
 
 type Desc   = String
@@ -35,13 +39,18 @@ data Task = Task
 data Action = Add String
             | Delete ID
             | Done ID
-            deriving (Eq, Show)
+            deriving (Eq)
 
 -- custom show for task, used for saving
 instance Show Task where
   show t = "uid:"++i++" done:"++isd ++ " " ++ desc t
     where i   = show $ uid t
           isd = show $ isdone t
+
+instance Show Action where
+  show (Add s)    = "add " ++ s
+  show (Delete i) = "delete " ++ show i
+  show (Done i)   = "done " ++ show i
 
 -- create a new, empty task
 newTask :: ID -> Task
@@ -58,6 +67,14 @@ parseAddTask ts s = t:ts
         t'' = newTask $ nextUid ts
         w   = words s
         d   = unwords $ filter (not . isProperty) w
+
+parseAction :: String -> Action
+parseAction s
+  | cmd == "add"    = Add rest
+  | cmd == "delete" = Delete $ read rest
+  | cmd == "done"   = Done $ read rest
+  where cmd  = head $ words s
+        rest = unwords $ tail $ words s
 
 splitProperty :: String -> Maybe (Key, Value)
 splitProperty s
@@ -101,6 +118,9 @@ applyAction ts (Done i)   = doTask ts i
 applyActions :: Tasks -> Actions -> Tasks
 applyActions = foldl applyAction 
 
+tasksFromActions :: Actions -> Tasks
+tasksFromActions = applyActions []
+
 uidExists :: Tasks -> ID -> Bool
 uidExists ts i = foldr (\t acc -> if uid t == i then True else acc) False ts
 
@@ -138,4 +158,10 @@ dumpTasks = map show
 
 unDumpTasks :: [String] -> Tasks
 unDumpTasks = foldl parseAddTask []
+
+dumpActions :: Actions -> [String]
+dumpActions = map show
+
+unDumpActions :: [String] -> Actions
+unDumpActions = map parseAction
 
