@@ -16,6 +16,7 @@ module Task
   , tasksFromActions
   , parseAddTask
   , parseAction
+  , parseExactAction
   , dumpTasks
   , unDumpTasks
   , dumpActions
@@ -75,6 +76,26 @@ parseAction s
   | cmd == "done"   = Done $ read rest
   where cmd  = head $ words s
         rest = unwords $ tail $ words s
+
+parseAddAction :: Tasks -> String -> Action
+parseAddAction ts s = Add $ show t
+  where t   = foldl applyProperty t' w
+        t'  = t'' {desc = d}
+        t'' = newTask $ nextUid ts
+        w   = words s
+        d   = unwords $ filter (not . isProperty) w
+
+parseExactAction :: Tasks -> String -> Either String Action
+parseExactAction ts s
+  | cmd == "add"    = Right $ parseAddAction ts rest
+  | not exists      = Left $ "Unknown ID: " ++ rest
+  | cmd == "delete" = Right $ Delete id
+  | cmd == "done"   = Right $ Done id
+  | otherwise       = Left $ "Unknown command: " ++ cmd
+  where cmd   = head $ words s
+        rest  = unwords $ tail $ words s
+        id    = read rest
+        exists  = uidExists ts id
 
 splitProperty :: String -> Maybe (Key, Value)
 splitProperty s
