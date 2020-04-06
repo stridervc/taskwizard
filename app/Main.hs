@@ -13,18 +13,6 @@ taskFilename = do
   home <- getHomeDirectory
   return $ home ++ "/.taskwizard"
 
-saveTasks :: String -> Tasks -> IO ()
-saveTasks f ts = writeFile f $ unlines $ dumpTasks ts
-
-loadTasks :: String -> IO Tasks
-loadTasks f = do
-  exists <- doesFileExist f
-  case exists of
-    False -> return []
-    True -> do
-      s <- readFile f
-      return $ unDumpTasks $ lines s
-
 saveActions :: String -> Actions -> IO ()
 saveActions f as = writeFile f $ unlines $ dumpActions as
 

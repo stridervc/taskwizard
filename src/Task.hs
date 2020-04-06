@@ -5,20 +5,9 @@ module Task
   , Actions
   , Task (..)
   , Action (..)
-  , uidExists
-  , nextUid
-  , deleteTask
-  , doTask
-  , printTask
   , printTasks
-  , applyAction
-  , applyActions
   , tasksFromActions
-  , parseAddTask
-  , parseAction
   , parseExactAction
-  , dumpTasks
-  , unDumpTasks
   , dumpActions
   , unDumpActions
   ) where
@@ -55,14 +44,15 @@ instance Show Action where
 
 -- create a new, empty task
 newTask :: ID -> Task
-newTask i = Task  { uid = i
-                  , isdone = False
-                  , desc = ""
-                  }
+newTask i =
+  Task  { uid = i
+        , isdone = False
+        , desc = ""
+        }
 
 -- parse and add a task to tasks
-parseAddTask :: Tasks -> String -> Tasks
-parseAddTask ts s = t:ts
+addTask :: Tasks -> String -> Tasks
+addTask ts s = t:ts
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
         t'' = newTask $ nextUid ts
@@ -132,7 +122,7 @@ applyProperty t s
 
 -- apply an action to a list of tasks
 applyAction :: Tasks -> Action -> Tasks
-applyAction ts (Add s)  = parseAddTask ts s
+applyAction ts (Add s)  = addTask ts s
 applyAction ts (Delete i) = deleteTask ts i
 applyAction ts (Done i)   = doTask ts i
 
@@ -173,16 +163,11 @@ printTasks :: Tasks -> IO ()
 printTasks [] = return ()
 printTasks ts = mapM_ printTask $ filter (not . isdone) ts
 
--- dump tasks to list of strings, for saving to file
-dumpTasks :: Tasks -> [String]
-dumpTasks = map show
-
-unDumpTasks :: [String] -> Tasks
-unDumpTasks = foldl parseAddTask []
-
+-- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
 dumpActions = map show
 
+-- construct actions from list of strings, for loading from file
 unDumpActions :: [String] -> Actions
 unDumpActions = map parseAction
 
