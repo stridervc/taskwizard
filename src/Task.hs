@@ -56,24 +56,24 @@ addTask ts s = t:ts
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
         t'' = newTask $ nextUid ts
-        w   = words s
-        d   = unwords $ filter (not . isProperty) w
+        w   = quoteWords s
+        d   = unQuoteWords $ filter (not . isProperty) w
 
 parseAction :: String -> Action
 parseAction s
   | cmd == "add"    = Add rest
   | cmd == "delete" = Delete $ read rest
   | cmd == "done"   = Done $ read rest
-  where cmd  = head $ words s
-        rest = unwords $ tail $ words s
+  where cmd  = head $ quoteWords s
+        rest = unQuoteWords $ tail $ quoteWords s
 
 parseAddAction :: Tasks -> String -> Action
 parseAddAction ts s = Add $ show t
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
         t'' = newTask $ nextUid ts
-        w   = words s
-        d   = unwords $ filter (not . isProperty) w
+        w   = quoteWords s
+        d   = unQuoteWords $ filter (not . isProperty) w
 
 parseExactAction :: Tasks -> String -> Either String Action
 parseExactAction ts s
@@ -82,8 +82,8 @@ parseExactAction ts s
   | cmd == "delete" = Right $ Delete id
   | cmd == "done"   = Right $ Done id
   | otherwise       = Left $ "Unknown command: " ++ cmd
-  where cmd   = head $ words s
-        rest  = unwords $ tail $ words s
+  where cmd   = head $ quoteWords s
+        rest  = unQuoteWords $ tail $ quoteWords s
         id    = read rest
         exists  = uidExists ts id
 
