@@ -171,3 +171,26 @@ dumpActions = map show
 unDumpActions :: [String] -> Actions
 unDumpActions = map parseAction
 
+-- like words, but treat text in quotes as one 'word'
+quoteWords :: String -> [String]
+quoteWords "" = []
+quoteWords ts 
+  | hasquote  = (words prequote) ++ [quoted] ++ quoteWords remain
+  | otherwise = words ts
+  where isq '\''  = True
+        isq '"'   = True
+        isq _     = False
+        prequote      = takeWhile (not . isq) ts
+        quotestartts  = drop (length prequote) ts
+        quoted        = if hasquote then takeWhile (not . isq) $ tail quotestartts else []
+        remain        = drop ((length quoted)+2) quotestartts
+        hasquote      = length quotestartts > 0
+
+unQuoteWords :: [String] -> String
+unQuoteWords [] = ""
+unQuoteWords (w:ws)
+  | hasspace  = "'" ++ w ++ "'" ++ rest
+  | otherwise = w ++ rest
+  where hasspace = ' ' `elem` w
+        rest = if length ws > 0 then " " ++ unQuoteWords ws else ""
+

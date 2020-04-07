@@ -7,6 +7,7 @@ import Task
 import System.Directory (getHomeDirectory, doesFileExist)
 import System.Environment
 import System.IO.Strict (readFile)
+import Data.Time
 
 taskFilename :: IO String
 taskFilename = do
@@ -32,6 +33,9 @@ main = do
   filename <- taskFilename
   actions <- loadActions filename
   let tasks = tasksFromActions actions
+
+  now <- getCurrentTime
+  putStrLn $ show now
 
   case length args of
     0 -> printTasks tasks

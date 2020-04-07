@@ -37,6 +37,7 @@ executables:
     - taskwizard
     - directory
     - strict
+    - time
 
 tests:
   taskwizard-test:

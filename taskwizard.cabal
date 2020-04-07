@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b70234a8e09ca1dff7a306170182ecc2c41d932ed866a4a4ce569e1ff3748107
+-- hash: a6c5fdbe0ccedfab52f3c47ebdb7516a3ca49de6b97e7b1621bd268321657610
 
 name:           taskwizard
 version:        0.1.0.0
@@ -48,6 +48,7 @@ executable taskwizard
     , directory
     , strict
     , taskwizard
+    , time
   default-language: Haskell2010
 
 test-suite taskwizard-test
