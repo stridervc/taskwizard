@@ -10,7 +10,6 @@ module Task
   , parseExactAction
   , dumpActions
   , unDumpActions
-  , quoteWords
   ) where
 
 import Data.Time
@@ -41,7 +40,7 @@ instance Show Task where
     "uid:"++i++" done:"++isd ++ " created:" ++ ct ++ " " ++ desc t
     where i   = show $ uid t
           isd = show $ isdone t
-          ct  = "'" ++ (show $ created t) ++ "'"
+          ct  = spacesToUnderscores $ show $ created t
 
 instance Show Action where
   show (Add s)    = "add " ++ s
@@ -63,24 +62,24 @@ addTask ct ts s = t:ts
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
         t'' = newTask ct $ nextUid ts
-        w   = quoteWords s
-        d   = unQuoteWords $ filter (not . isProperty) w
+        w   = words s
+        d   = unwords $ filter (not . isProperty) w
 
 parseAction :: String -> Action
 parseAction s
   | cmd == "add"    = Add rest
   | cmd == "delete" = Delete $ read rest
   | cmd == "done"   = Done $ read rest
-  where cmd  = head $ quoteWords s
-        rest = unQuoteWords $ tail $ quoteWords s
+  where cmd  = head $ words s
+        rest = unwords $ tail $ words s
 
 parseAddAction :: UTCTime -> Tasks -> String -> Action
 parseAddAction ct ts s = Add $ show t
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
         t'' = newTask ct $ nextUid ts
-        w   = quoteWords s
-        d   = unQuoteWords $ filter (not . isProperty) w
+        w   = words s
+        d   = unwords $ filter (not . isProperty) w
 
 parseExactAction :: UTCTime -> Tasks -> String -> Either String Action
 parseExactAction ct ts s
@@ -89,8 +88,8 @@ parseExactAction ct ts s
   | cmd == "delete" = Right $ Delete id
   | cmd == "done"   = Right $ Done id
   | otherwise       = Left $ "Unknown command: " ++ cmd
-  where cmd   = head $ quoteWords s
-        rest  = unQuoteWords $ tail $ quoteWords s
+  where cmd   = head $ words s
+        rest  = unwords $ tail $ words s
         id    = read rest
         exists  = uidExists ts id
 
@@ -99,7 +98,7 @@ splitProperty s
   | ':' `elem` s  = Just (k,v)
   | otherwise     = Nothing
   where k = takeWhile (/= ':') s
-        v = tail $ dropWhile (/= ':') s
+        v = underscoresToSpaces $ tail $ dropWhile (/= ':') s
 
 -- check if a string is a known property
 isProperty :: String -> Bool
@@ -177,26 +176,9 @@ dumpActions = map show
 unDumpActions :: [String] -> Actions
 unDumpActions = map parseAction
 
--- like words, but treat text in quotes as one 'word'
-quoteWords :: String -> [String]
-quoteWords "" = []
-quoteWords ts 
-  | hasquote  = (words prequote) ++ [quoted] ++ quoteWords remain
-  | otherwise = words ts
-  where isq '\''  = True
-        isq '"'   = True
-        isq _     = False
-        prequote      = takeWhile (not . isq) ts
-        quotestartts  = drop (length prequote) ts
-        quoted        = if hasquote then takeWhile (not . isq) $ tail quotestartts else []
-        remain        = drop ((length quoted)+2) quotestartts
-        hasquote      = length quotestartts > 0
+spacesToUnderscores :: String -> String
+spacesToUnderscores = foldr (\c acc -> if c == ' ' then '_':acc else c:acc) ""
 
-unQuoteWords :: [String] -> String
-unQuoteWords [] = ""
-unQuoteWords (w:ws)
-  | hasspace  = "'" ++ w ++ "'" ++ rest
-  | otherwise = w ++ rest
-  where hasspace = ' ' `elem` w
-        rest = if length ws > 0 then " " ++ unQuoteWords ws else ""
+underscoresToSpaces :: String -> String
+underscoresToSpaces = foldr (\c acc -> if c == '_' then ' ':acc else c:acc) ""
 
