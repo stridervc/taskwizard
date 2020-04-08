@@ -29,18 +29,16 @@ loadActions f = do
 main :: IO ()
 main = do
   args <- getArgs
+  now <- getCurrentTime
 
   filename <- taskFilename
   actions <- loadActions filename
-  let tasks = tasksFromActions actions
-
-  now <- getCurrentTime
-  putStrLn $ show now
+  let tasks = tasksFromActions now actions
 
   case length args of
     0 -> printTasks tasks
     otherwise -> do
-      let eitherAction = parseExactAction tasks $ unwords args
+      let eitherAction = parseExactAction now tasks $ unwords args
       --let cmd  = head args
       --let rest = unwords $ tail args
       --let action = parseAction $ unwords args

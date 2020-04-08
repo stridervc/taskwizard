@@ -10,7 +10,10 @@ module Task
   , parseExactAction
   , dumpActions
   , unDumpActions
+  , quoteWords
   ) where
+
+import Data.Time
 
 type Desc   = String
 type ID     = Integer
@@ -24,6 +27,7 @@ data Task = Task
   { uid     :: ID
   , desc    :: Desc
   , isdone  :: Bool
+  , created :: UTCTime
   } deriving (Eq)
 
 data Action = Add String
@@ -33,9 +37,11 @@ data Action = Add String
 
 -- custom show for task, used for saving
 instance Show Task where
-  show t = "uid:"++i++" done:"++isd ++ " " ++ desc t
+  show t =
+    "uid:"++i++" done:"++isd ++ " created:" ++ ct ++ " " ++ desc t
     where i   = show $ uid t
           isd = show $ isdone t
+          ct  = "'" ++ (show $ created t) ++ "'"
 
 instance Show Action where
   show (Add s)    = "add " ++ s
@@ -43,19 +49,20 @@ instance Show Action where
   show (Done i)   = "done " ++ show i
 
 -- create a new, empty task
-newTask :: ID -> Task
-newTask i =
-  Task  { uid = i
-        , isdone = False
-        , desc = ""
+newTask :: UTCTime -> ID -> Task
+newTask ct i =
+  Task  { uid     = i
+        , isdone  = False
+        , desc    = ""
+        , created = ct
         }
 
 -- parse and add a task to tasks
-addTask :: Tasks -> String -> Tasks
-addTask ts s = t:ts
+addTask :: UTCTime -> Tasks -> String -> Tasks
+addTask ct ts s = t:ts
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
-        t'' = newTask $ nextUid ts
+        t'' = newTask ct $ nextUid ts
         w   = quoteWords s
         d   = unQuoteWords $ filter (not . isProperty) w
 
@@ -67,17 +74,17 @@ parseAction s
   where cmd  = head $ quoteWords s
         rest = unQuoteWords $ tail $ quoteWords s
 
-parseAddAction :: Tasks -> String -> Action
-parseAddAction ts s = Add $ show t
+parseAddAction :: UTCTime -> Tasks -> String -> Action
+parseAddAction ct ts s = Add $ show t
   where t   = foldl applyProperty t' w
         t'  = t'' {desc = d}
-        t'' = newTask $ nextUid ts
+        t'' = newTask ct $ nextUid ts
         w   = quoteWords s
         d   = unQuoteWords $ filter (not . isProperty) w
 
-parseExactAction :: Tasks -> String -> Either String Action
-parseExactAction ts s
-  | cmd == "add"    = Right $ parseAddAction ts rest
+parseExactAction :: UTCTime -> Tasks -> String -> Either String Action
+parseExactAction ct ts s
+  | cmd == "add"    = Right $ parseAddAction ct ts rest
   | not exists      = Left $ "Unknown ID: " ++ rest
   | cmd == "delete" = Right $ Delete id
   | cmd == "done"   = Right $ Done id
@@ -104,6 +111,7 @@ isProperty s = do
       case k of
         "uid"     -> True
         "done"    -> True
+        "created" -> True
         otherwise -> False
 
 -- apply iff property
@@ -117,20 +125,21 @@ applyProperty t s
     case k of
       "uid"     -> t {uid = read v}
       "done"    -> t {isdone = read v} 
+      "created" -> t {created = read v}
       otherwise -> t
   | otherwise     = t
 
 -- apply an action to a list of tasks
-applyAction :: Tasks -> Action -> Tasks
-applyAction ts (Add s)  = addTask ts s
-applyAction ts (Delete i) = deleteTask ts i
-applyAction ts (Done i)   = doTask ts i
+applyAction :: UTCTime -> Tasks -> Action -> Tasks
+applyAction ct ts (Add s)   = addTask ct ts s
+applyAction _ ts (Delete i) = deleteTask ts i
+applyAction _ ts (Done i)   = doTask ts i
 
-applyActions :: Tasks -> Actions -> Tasks
-applyActions = foldl applyAction 
+applyActions :: UTCTime -> Tasks -> Actions -> Tasks
+applyActions ct ts as = foldl (applyAction ct) ts as
 
-tasksFromActions :: Actions -> Tasks
-tasksFromActions = applyActions []
+tasksFromActions :: UTCTime -> Actions -> Tasks
+tasksFromActions ct as = applyActions ct [] as
 
 uidExists :: Tasks -> ID -> Bool
 uidExists ts i = foldr (\t acc -> if uid t == i then True else acc) False ts
@@ -146,10 +155,7 @@ deleteTask ts i = foldr (\t acc -> if i == uid t then acc else t:acc) [] ts
 -- mark task as done
 doTask :: Tasks -> ID -> Tasks
 doTask ts i = foldr (\t acc -> if i == uid t then (fTask t):acc else t:acc) [] ts
-  where fTask t = Task  { uid     = uid t
-                        , desc    = desc t
-                        , isdone  = True
-                        }
+  where fTask t = t {isdone = True}
 
 -- print task
 printTask :: Task -> IO ()
