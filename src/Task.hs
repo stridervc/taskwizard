@@ -13,6 +13,7 @@ module Task
   ) where
 
 import Data.Time
+import Data.Sort
 
 type Desc   = String
 type ID     = Integer
@@ -163,10 +164,13 @@ printTask t = do
   where i = show $ uid t
         d = desc t
 
+todo :: Tasks -> Tasks
+todo = filter (not . isdone)
+
 -- print tasks
 printTasks :: Tasks -> IO ()
 printTasks [] = return ()
-printTasks ts = mapM_ printTask $ filter (not . isdone) ts
+printTasks ts = mapM_ printTask $ sorted $ todo ts
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -181,4 +185,14 @@ spacesToUnderscores = foldr (\c acc -> if c == ' ' then '_':acc else c:acc) ""
 
 underscoresToSpaces :: String -> String
 underscoresToSpaces = foldr (\c acc -> if c == '_' then ' ':acc else c:acc) ""
+
+compareTasks :: Task -> Task -> Ordering
+compareTasks t1 t2
+  | created t1 == created t2  = compare (uid t1) (uid t2)
+  | created t1 < created t2   = GT
+  | created t1 > created t2   = LT
+
+sorted :: Tasks -> Tasks
+sorted [] = []
+sorted ts = sortBy (compareTasks) ts
 

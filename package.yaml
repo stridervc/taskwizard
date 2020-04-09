@@ -26,6 +26,7 @@ library:
   source-dirs: src
   dependencies:
   - time
+  - sort
 
 executables:
   taskwizard:
