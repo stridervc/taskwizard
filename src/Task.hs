@@ -188,9 +188,10 @@ underscoresToSpaces = foldr (\c acc -> if c == '_' then ' ':acc else c:acc) ""
 
 compareTasks :: Task -> Task -> Ordering
 compareTasks t1 t2
-  | created t1 == created t2  = compare (uid t1) (uid t2)
-  | created t1 < created t2   = GT
-  | created t1 > created t2   = LT
+  | ct1 == ct2  = compare (uid t1) (uid t2)
+  | otherwise   = compare ct1 ct2
+  where ct1 = created t1
+        ct2 = created t2
 
 sorted :: Tasks -> Tasks
 sorted [] = []
