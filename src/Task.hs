@@ -162,11 +162,12 @@ doTask ts i = foldr (\t acc -> if i == uid t then (fTask t):acc else t:acc) [] t
   where fTask t = t {isdone = True}
 
 -- print task
-printTask :: Task -> IO ()
-printTask t = do
-  putStrLn $ i ++ "\t" ++ d
+printTask :: UTCTime -> Task -> IO ()
+printTask now t = do
+  putStrLn $ i ++ "\t" ++ d ++ "\t" ++ s
   where i = show $ uid t
         d = desc t
+        s = show $ score now t
 
 todo :: Tasks -> Tasks
 todo = filter (not . isdone)
@@ -174,7 +175,7 @@ todo = filter (not . isdone)
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
 printTasks _ [] = return ()
-printTasks now ts = mapM_ printTask $ sorted now $ todo ts
+printTasks now ts = mapM_ (printTask now) $ sorted now $ todo ts
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -194,7 +195,8 @@ underscoresToSpaces = foldr (\c acc -> if c == '_' then ' ':acc else c:acc) ""
 compareTasks :: UTCTime -> Task -> Task -> Ordering
 compareTasks now t1 t2
   | score1 == score2  = compare (uid t1) (uid t2)
-  | otherwise         = compare score1 score2
+  | score1 < score2   = GT
+  | score1 > score2   = LT
   where score1 = score now t1
         score2 = score now t2
 
@@ -220,5 +222,5 @@ tasksToActions (t:ts) = Add (show t) : tasksToActions ts
 
 -- calculate a score for a task
 score :: UTCTime -> Task -> Score
-score now t = diff / 60
+score now t = diff / 60 / 60 / 24
   where diff = realToFrac $ diffUTCTime now $ created t
