@@ -10,6 +10,8 @@ module Task
   , parseExactAction
   , dumpActions
   , unDumpActions
+  , refactor
+  , tasksToActions
   ) where
 
 import Data.Time
@@ -196,4 +198,15 @@ compareTasks t1 t2
 sorted :: Tasks -> Tasks
 sorted [] = []
 sorted ts = sortBy (compareTasks) ts
+
+renumber :: ID -> Tasks -> Tasks
+renumber _ [] = []
+renumber i (t:ts) = t {uid = i} : renumber (i+1) ts
+
+refactor :: Tasks -> Tasks
+refactor = renumber 1 . sorted . todo
+
+tasksToActions :: Tasks -> Actions
+tasksToActions [] = []
+tasksToActions (t:ts) = Add (show t) : tasksToActions ts
 
