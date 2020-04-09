@@ -2,6 +2,7 @@ module Task
   ( Desc
   , ID
   , Tasks
+  , Score
   , Actions
   , Task (..)
   , Action (..)
@@ -19,6 +20,7 @@ import Data.Sort
 
 type Desc   = String
 type ID     = Integer
+type Score  = Float
 type Key    = String
 type Value  = String
 
@@ -170,9 +172,9 @@ todo :: Tasks -> Tasks
 todo = filter (not . isdone)
 
 -- print tasks
-printTasks :: Tasks -> IO ()
-printTasks [] = return ()
-printTasks ts = mapM_ printTask $ sorted $ todo ts
+printTasks :: UTCTime -> Tasks -> IO ()
+printTasks _ [] = return ()
+printTasks now ts = mapM_ printTask $ sorted now $ todo ts
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -188,25 +190,35 @@ spacesToUnderscores = foldr (\c acc -> if c == ' ' then '_':acc else c:acc) ""
 underscoresToSpaces :: String -> String
 underscoresToSpaces = foldr (\c acc -> if c == '_' then ' ':acc else c:acc) ""
 
-compareTasks :: Task -> Task -> Ordering
-compareTasks t1 t2
-  | ct1 == ct2  = compare (uid t1) (uid t2)
-  | otherwise   = compare ct1 ct2
-  where ct1 = created t1
-        ct2 = created t2
+-- used for sorting
+compareTasks :: UTCTime -> Task -> Task -> Ordering
+compareTasks now t1 t2
+  | score1 == score2  = compare (uid t1) (uid t2)
+  | otherwise         = compare score1 score2
+  where score1 = score now t1
+        score2 = score now t2
 
-sorted :: Tasks -> Tasks
-sorted [] = []
-sorted ts = sortBy (compareTasks) ts
+-- return sorted tasks
+sorted :: UTCTime -> Tasks -> Tasks
+sorted _ [] = []
+sorted now ts = sortBy (compareTasks now) ts
 
+-- renumber tasks, starting at ID
 renumber :: ID -> Tasks -> Tasks
 renumber _ [] = []
 renumber i (t:ts) = t {uid = i} : renumber (i+1) ts
 
-refactor :: Tasks -> Tasks
-refactor = renumber 1 . sorted . todo
+-- remove done and deleted tasks
+-- keep only tasks that are to do
+refactor :: UTCTime -> Tasks -> Tasks
+refactor now ts = renumber 1 $ sorted now $ todo ts
 
+-- return Add actions for tasks
 tasksToActions :: Tasks -> Actions
 tasksToActions [] = []
 tasksToActions (t:ts) = Add (show t) : tasksToActions ts
 
+-- calculate a score for a task
+score :: UTCTime -> Task -> Score
+score now t = diff / 60
+  where diff = realToFrac $ diffUTCTime now $ created t

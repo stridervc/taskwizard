@@ -36,7 +36,7 @@ main = do
   let tasks = tasksFromActions now actions
 
   case length args of
-    0 -> printTasks tasks
+    0 -> printTasks now tasks
     otherwise -> do
       let eitherAction = parseExactAction now tasks $ unwords args
       let cmd  = head args
@@ -45,7 +45,7 @@ main = do
       
       case cmd of
         "refactor" -> do
-          saveActions filename $ tasksToActions $ refactor tasks
+          saveActions filename $ tasksToActions $ refactor now tasks
 
         otherwise  -> do
           case eitherAction of
