@@ -61,19 +61,33 @@ uncsv s = read f : uncsv rest
 -- Add spaces in between strings and return as a string
 spaces :: [String] -> String
 spaces [] = ""
-spaces (s:ss) = s ++ sp ++ spaces ss
+spaces (s:ss)
+  | s == ""   = spaces ss
+  | otherwise = s ++ sp ++ spaces ss
   where sp = if length ss > 0 then " " else ""
+
+-- return "property:value" if value is not default
+-- provide a function to convert the value to string
+-- used for Show Task
+-- property -> value -> function -> default
+propertyString :: (Eq a, Show a) => String -> a -> (a -> String) -> a -> String
+propertyString ps v f d
+  | v == d    = ""
+  | otherwise = ps ++ ":" ++ f v
 
 -- custom show for task, used for saving
 instance Show Task where
   show t =
-    spaces["uid:"++i,"done:"++isd,"created:"++ct,"depends:"++ds, "project:"++p,"priority:"++pri,desc t]
+    spaces  [ "uid:"++i
+            , propertyString "done" (isdone t) show False
+            , "created:"++ct
+            , propertyString "depends" (depends t) csv []
+            , propertyString "project" (project t) id ""
+            , propertyString "priority" (priority t) show 0
+            , desc t
+            ]
     where i   = show $ uid t
-          isd = show $ isdone t
           ct  = spacesToUnderscores $ show $ created t
-          ds  = csv $ depends t
-          p   = project t
-          pri = show $ priority t
 
 -- check if a string is a known property
 isProperty :: String -> Bool
