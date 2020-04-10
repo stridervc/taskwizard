@@ -27,17 +27,19 @@ type Key      = String
 type Value    = String
 type Width    = Int
 type Project  = String
+type Priority = Float
 
 type Tasks = [Task]
 type Actions = [Action]
 
 data Task = Task
-  { uid     :: ID
-  , desc    :: Desc
-  , isdone  :: Bool
-  , created :: UTCTime
-  , depends :: [ID]
-  , project :: Project
+  { uid       :: ID
+  , desc      :: Desc
+  , isdone    :: Bool
+  , created   :: UTCTime
+  , depends   :: [ID]
+  , project   :: Project
+  , priority  :: Priority
   } deriving (Eq)
 
 data Action = Add String
@@ -56,15 +58,22 @@ uncsv s = read f : uncsv rest
   where f = takeWhile (/=',') s
         rest = drop (length f + 1) s
 
+-- Add spaces in between strings and return as a string
+spaces :: [String] -> String
+spaces [] = ""
+spaces (s:ss) = s ++ sp ++ spaces ss
+  where sp = if length ss > 0 then " " else ""
+
 -- custom show for task, used for saving
 instance Show Task where
   show t =
-    "uid:"++i++" done:"++isd++" created:"++ct++" depends:"++ds++ " project:"++p++" "++desc t
+    spaces["uid:"++i,"done:"++isd,"created:"++ct,"depends:"++ds, "project:"++p,"priority:"++pri,desc t]
     where i   = show $ uid t
           isd = show $ isdone t
           ct  = spacesToUnderscores $ show $ created t
           ds  = csv $ depends t
           p   = project t
+          pri = show $ priority t
 
 -- check if a string is a known property
 isProperty :: String -> Bool
@@ -74,12 +83,13 @@ isProperty s = do
     Nothing -> False
     Just (k,v) -> do
       case k of
-        "uid"     -> True
-        "done"    -> True
-        "created" -> True
-        "depends" -> True
-        "project" -> True
-        otherwise -> False
+        "uid"       -> True
+        "done"      -> True
+        "created"   -> True
+        "depends"   -> True
+        "project"   -> True
+        "priority"  -> True
+        otherwise   -> False
 
 -- apply iff property
 -- take a task and a string
@@ -90,13 +100,14 @@ applyProperty t s
   | isProperty s  = do
     let Just (k,v) = splitProperty s
     case k of
-      "uid"     -> t {uid = read v}
-      "done"    -> t {isdone = read v} 
-      "created" -> t {created = read v}
-      "depends" -> t {depends = uncsv v}
-      "project" -> t {project = v}
-      otherwise -> t
-  | otherwise     = t
+      "uid"       -> t {uid = read v}
+      "done"      -> t {isdone = read v} 
+      "created"   -> t {created = read v}
+      "depends"   -> t {depends = uncsv v}
+      "project"   -> t {project = v}
+      "priority"  -> t {priority = read v}
+      otherwise   -> t
+  | otherwise = t
 
 instance Show Action where
   show (Add s)    = "add " ++ s
@@ -106,12 +117,13 @@ instance Show Action where
 -- create a new, empty task
 newTask :: UTCTime -> ID -> Task
 newTask ct i =
-  Task  { uid     = i
-        , isdone  = False
-        , desc    = ""
-        , created = ct
-        , depends = []
-        , project = ""
+  Task  { uid       = i
+        , isdone    = False
+        , desc      = ""
+        , created   = ct
+        , depends   = []
+        , project   = ""
+        , priority  = 0
         }
 
 -- parse and add a task to tasks
@@ -292,7 +304,7 @@ taskFromID (t:ts) i
 
 -- calculate a score for a task
 score :: UTCTime -> Tasks -> ID -> Score
-score now ts i = times + ds + dc + ps
+score now ts i = times + ds + dc + ps + pri
   where diff  = realToFrac $ diffUTCTime now $ created t
         times = diff / 60 / 60 / 24
         d     = dependants ts t
@@ -300,6 +312,7 @@ score now ts i = times + ds + dc + ps
         dc    = 0.1 * (fromIntegral $ length d)
         t     = taskFromID ts i
         ps    = if project t == "" then 0 else 1
+        pri   = priority t
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []
