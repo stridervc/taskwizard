@@ -46,7 +46,11 @@ main = do
   let tasks = tasksFromActions now actions
 
   case length args of
-    0 -> printTasks now tasks
+    0 -> do
+      putStrLn ""
+      printTasks now tasks
+      putStrLn ""
+
     otherwise -> do
       let eitherAction = parseExactAction now tasks $ unwords args
       let cmd  = head args
