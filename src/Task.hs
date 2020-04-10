@@ -202,7 +202,7 @@ printTask (iw:dw:sw:[]) now ts t = do
   putStrLn $ i ++ " " ++ d ++ " " ++ s
   where i   = padStringLeft iw $ show id
         d   = padString dw $ desc t
-        s   = padString sw $ prettyNum $ score now ts id
+        s   = padStringLeft sw $ prettyNum $ score now ts id
         id  = uid t
 
 -- print tasks
