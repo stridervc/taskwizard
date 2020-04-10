@@ -78,9 +78,9 @@ propertyString ps v f d
 -- custom show for task, used for saving
 instance Show Task where
   show t =
-    spaces  [ "uid:"++i
+    spaces  [ "uid:" ++ i
             , propertyString "done" (isdone t) show False
-            , "created:"++ct
+            , "created:" ++ ct
             , propertyString "depends" (depends t) csv []
             , propertyString "project" (project t) id ""
             , propertyString "priority" (priority t) show 0
@@ -231,11 +231,11 @@ padStringLeft w s
 -- print task
 printTask :: [Width] -> UTCTime -> Tasks -> Task -> IO ()
 printTask ws now ts t = do
-  putStrLn $ i ++ " " ++ p ++ " " ++ d ++ " " ++ s
+  putStrLn $ spaces [i,p,d,s]
   where i   = padStringLeft iw $ show id
+        p   = padString pw $ project t
         d   = padString dw $ desc t
         s   = padStringLeft sw $ prettyNum $ score now ts id
-        p   = padString pw $ project t
         id  = uid t
         iw  = ws!!0
         pw  = ws!!1
