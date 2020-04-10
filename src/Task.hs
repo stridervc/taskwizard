@@ -20,12 +20,13 @@ import Data.Sort
 import System.Console.Terminal.Size (size, width)
 import Numeric (showFFloat)
 
-type Desc   = String
-type ID     = Integer
-type Score  = Float
-type Key    = String
-type Value  = String
-type Width  = Int
+type Desc     = String
+type ID       = Integer
+type Score    = Float
+type Key      = String
+type Value    = String
+type Width    = Int
+type Project  = String
 
 type Tasks = [Task]
 type Actions = [Action]
@@ -36,6 +37,7 @@ data Task = Task
   , isdone  :: Bool
   , created :: UTCTime
   , depends :: [ID]
+  , project :: Project
   } deriving (Eq)
 
 data Action = Add String
@@ -57,11 +59,44 @@ uncsv s = read f : uncsv rest
 -- custom show for task, used for saving
 instance Show Task where
   show t =
-    "uid:"++i++" done:"++isd++" created:"++ct++" depends:"++ds++ " "++desc t
+    "uid:"++i++" done:"++isd++" created:"++ct++" depends:"++ds++ " project:"++p++" "++desc t
     where i   = show $ uid t
           isd = show $ isdone t
           ct  = spacesToUnderscores $ show $ created t
           ds  = csv $ depends t
+          p   = project t
+
+-- check if a string is a known property
+isProperty :: String -> Bool
+isProperty s = do
+  let p = splitProperty s
+  case p of
+    Nothing -> False
+    Just (k,v) -> do
+      case k of
+        "uid"     -> True
+        "done"    -> True
+        "created" -> True
+        "depends" -> True
+        "project" -> True
+        otherwise -> False
+
+-- apply iff property
+-- take a task and a string
+-- if the string is a known property (eg uid:1)
+-- then apply the property to the task
+applyProperty :: Task -> String -> Task
+applyProperty t s
+  | isProperty s  = do
+    let Just (k,v) = splitProperty s
+    case k of
+      "uid"     -> t {uid = read v}
+      "done"    -> t {isdone = read v} 
+      "created" -> t {created = read v}
+      "depends" -> t {depends = uncsv v}
+      "project" -> t {project = v}
+      otherwise -> t
+  | otherwise     = t
 
 instance Show Action where
   show (Add s)    = "add " ++ s
@@ -76,6 +111,7 @@ newTask ct i =
         , desc    = ""
         , created = ct
         , depends = []
+        , project = ""
         }
 
 -- parse and add a task to tasks
@@ -121,36 +157,6 @@ splitProperty s
   | otherwise     = Nothing
   where k = takeWhile (/= ':') s
         v = underscoresToSpaces $ tail $ dropWhile (/= ':') s
-
--- check if a string is a known property
-isProperty :: String -> Bool
-isProperty s = do
-  let p = splitProperty s
-  case p of
-    Nothing -> False
-    Just (k,v) -> do
-      case k of
-        "uid"     -> True
-        "done"    -> True
-        "created" -> True
-        "depends" -> True
-        otherwise -> False
-
--- apply iff property
--- take a task and a string
--- if the string is a known property (eg uid:1)
--- then apply the property to the task
-applyProperty :: Task -> String -> Task
-applyProperty t s
-  | isProperty s  = do
-    let Just (k,v) = splitProperty s
-    case k of
-      "uid"     -> t {uid = read v}
-      "done"    -> t {isdone = read v} 
-      "created" -> t {created = read v}
-      "depends" -> t {depends = uncsv v}
-      otherwise -> t
-  | otherwise     = t
 
 -- apply an action to a list of tasks
 applyAction :: UTCTime -> Tasks -> Action -> Tasks
@@ -198,35 +204,42 @@ padStringLeft w s
 
 -- print task
 printTask :: [Width] -> UTCTime -> Tasks -> Task -> IO ()
-printTask (iw:dw:sw:[]) now ts t = do
-  putStrLn $ i ++ " " ++ d ++ " " ++ s
+printTask ws now ts t = do
+  putStrLn $ i ++ " " ++ p ++ " " ++ d ++ " " ++ s
   where i   = padStringLeft iw $ show id
         d   = padString dw $ desc t
         s   = padStringLeft sw $ prettyNum $ score now ts id
+        p   = padString pw $ project t
         id  = uid t
+        iw  = ws!!0
+        pw  = ws!!1
+        dw  = ws!!2
+        sw  = ws!!3
 
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
 printTasks _ [] = return ()
 printTasks now ts = do
   s <- size   -- console size
-  let tasks = todo ts
+  let columns = 4
+  let tasks = sorted now $ todo ts
   let maxi = foldl1 max $ map uid tasks
   let iw = length $ show maxi
   let maxs = foldl1 max $ map (score now ts) $ map uid tasks
   let sw = length $ prettyNum maxs
   let mdw = foldl1 max $ map (length . desc) tasks
+  let pw = foldl1 max $ map (length . project) tasks
+  let printem = \dw -> mapM_ (printTask [iw,pw,dw,sw] now tasks) tasks
 
   case s of
     Just w -> do
-      let da = width w - iw - sw - 2
+      let da = width w - iw - sw - pw - (columns-1)
       if da > mdw + 2 then
-        mapM_ (printTask [iw,mdw+2,sw] now tasks) $ sorted now $ tasks
+        printem $ mdw+2
       else
-        mapM_ (printTask [iw,da,sw] now tasks) $ sorted now $ tasks
+        printem da
     Nothing -> do
-      let dw = 10
-      mapM_ (printTask [iw,dw,sw] now tasks) $ sorted now $ tasks
+      printem 10
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -279,13 +292,14 @@ taskFromID (t:ts) i
 
 -- calculate a score for a task
 score :: UTCTime -> Tasks -> ID -> Score
-score now ts i = times + ds + dc
+score now ts i = times + ds + dc + ps
   where diff  = realToFrac $ diffUTCTime now $ created t
         times = diff / 60 / 60 / 24
         d     = dependants ts t
         ds    = sum $ map (score now ts) d
         dc    = 0.1 * (fromIntegral $ length d)
         t     = taskFromID ts i
+        ps    = if project t == "" then 0 else 1
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []
