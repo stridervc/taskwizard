@@ -26,6 +26,16 @@ loadActions f = do
       s <- readFile f
       return $ unDumpActions $ lines s
 
+showHelp :: IO ()
+showHelp = do
+  putStrLn "taskwizard help"
+  putStrLn "  (nothing)   - List tasks"
+  putStrLn "  add [desc]  - Add task"
+  putStrLn "  delete [id] - Delete task with ID"
+  putStrLn "  done [id]   - Mark task with ID as done"
+  putStrLn "  refactor    - Renumber tasks and clean up the save file"
+  putStrLn ""
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -46,6 +56,7 @@ main = do
       case cmd of
         "refactor" -> do
           saveActions filename $ tasksToActions $ refactor now tasks
+        "help" -> showHelp
 
         otherwise  -> do
           case eitherAction of
