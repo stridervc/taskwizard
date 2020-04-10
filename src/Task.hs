@@ -192,22 +192,23 @@ printTasks :: UTCTime -> Tasks -> IO ()
 printTasks _ [] = return ()
 printTasks now ts = do
   s <- size   -- console size
-  let maxi = foldl1 max $ map uid ts
+  let tasks = todo ts
+  let maxi = foldl1 max $ map uid tasks
   let iw = length $ show maxi
-  let maxs = foldl1 max $ map (score now) ts
+  let maxs = foldl1 max $ map (score now) tasks
   let sw = length $ prettyNum maxs
-  let mdw = foldl1 max $ map (length . desc) ts
+  let mdw = foldl1 max $ map (length . desc) tasks
 
   case s of
     Just w -> do
       let da = width w - iw - sw - 2
       if da > mdw + 2 then
-        mapM_ (printTask [iw,mdw+2,sw] now) $ sorted now $ todo ts
+        mapM_ (printTask [iw,mdw+2,sw] now) $ sorted now $ tasks
       else
-        mapM_ (printTask [iw,da,sw] now) $ sorted now $ todo ts
+        mapM_ (printTask [iw,da,sw] now) $ sorted now $ tasks
     Nothing -> do
       let dw = 10
-      mapM_ (printTask [iw,dw,sw] now) $ sorted now $ todo ts
+      mapM_ (printTask [iw,dw,sw] now) $ sorted now $ tasks
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
