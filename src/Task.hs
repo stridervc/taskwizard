@@ -18,6 +18,7 @@ module Task
 import Data.Time
 import Data.Sort
 import System.Console.Terminal.Size (size, width)
+import Numeric (showFFloat)
 
 type Desc   = String
 type ID     = Integer
@@ -34,6 +35,7 @@ data Task = Task
   , desc    :: Desc
   , isdone  :: Bool
   , created :: UTCTime
+  , depends :: [ID]
   } deriving (Eq)
 
 data Action = Add String
@@ -41,13 +43,25 @@ data Action = Add String
             | Done ID
             deriving (Eq)
 
+csv :: (Show a) => [a] -> String
+csv [] = ""
+csv (a:as) = show a ++ comma ++ csv as
+  where comma = if length as > 0 then "," else ""
+
+uncsv :: (Read a) => String -> [a]
+uncsv "" = []
+uncsv s = read f : uncsv rest
+  where f = takeWhile (/=',') s
+        rest = drop (length f + 1) s
+
 -- custom show for task, used for saving
 instance Show Task where
   show t =
-    "uid:"++i++" done:"++isd ++ " created:" ++ ct ++ " " ++ desc t
+    "uid:"++i++" done:"++isd++" created:"++ct++" depends:"++ds++ " "++desc t
     where i   = show $ uid t
           isd = show $ isdone t
           ct  = spacesToUnderscores $ show $ created t
+          ds  = csv $ depends t
 
 instance Show Action where
   show (Add s)    = "add " ++ s
@@ -61,6 +75,7 @@ newTask ct i =
         , isdone  = False
         , desc    = ""
         , created = ct
+        , depends = []
         }
 
 -- parse and add a task to tasks
@@ -118,6 +133,7 @@ isProperty s = do
         "uid"     -> True
         "done"    -> True
         "created" -> True
+        "depends" -> True
         otherwise -> False
 
 -- apply iff property
@@ -132,6 +148,7 @@ applyProperty t s
       "uid"     -> t {uid = read v}
       "done"    -> t {isdone = read v} 
       "created" -> t {created = read v}
+      "depends" -> t {depends = uncsv v}
       otherwise -> t
   | otherwise     = t
 
@@ -180,12 +197,13 @@ padStringLeft w s
   where ls = length s
 
 -- print task
-printTask :: [Width] -> UTCTime -> Task -> IO ()
-printTask (iw:dw:sw:[]) now t = do
+printTask :: [Width] -> UTCTime -> Tasks -> Task -> IO ()
+printTask (iw:dw:sw:[]) now ts t = do
   putStrLn $ i ++ " " ++ d ++ " " ++ s
-  where i = padStringLeft iw $ show $ uid t
-        d = padString dw $ desc t
-        s = padString sw $ prettyNum $ score now t
+  where i   = padStringLeft iw $ show id
+        d   = padString dw $ desc t
+        s   = padString sw $ prettyNum $ score now ts id
+        id  = uid t
 
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
@@ -195,7 +213,7 @@ printTasks now ts = do
   let tasks = todo ts
   let maxi = foldl1 max $ map uid tasks
   let iw = length $ show maxi
-  let maxs = foldl1 max $ map (score now) tasks
+  let maxs = foldl1 max $ map (score now ts) $ map uid tasks
   let sw = length $ prettyNum maxs
   let mdw = foldl1 max $ map (length . desc) tasks
 
@@ -203,12 +221,12 @@ printTasks now ts = do
     Just w -> do
       let da = width w - iw - sw - 2
       if da > mdw + 2 then
-        mapM_ (printTask [iw,mdw+2,sw] now) $ sorted now $ tasks
+        mapM_ (printTask [iw,mdw+2,sw] now tasks) $ sorted now $ tasks
       else
-        mapM_ (printTask [iw,da,sw] now) $ sorted now $ tasks
+        mapM_ (printTask [iw,da,sw] now tasks) $ sorted now $ tasks
     Nothing -> do
       let dw = 10
-      mapM_ (printTask [iw,dw,sw] now) $ sorted now $ tasks
+      mapM_ (printTask [iw,dw,sw] now tasks) $ sorted now $ tasks
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -225,18 +243,19 @@ underscoresToSpaces :: String -> String
 underscoresToSpaces = foldr (\c acc -> if c == '_' then ' ':acc else c:acc) ""
 
 -- used for sorting
-compareTasks :: UTCTime -> Task -> Task -> Ordering
-compareTasks now t1 t2
+compareTasks :: UTCTime -> Tasks -> Task -> Task -> Ordering
+compareTasks now ts t1 t2
   | score1 == score2  = compare (uid t1) (uid t2)
-  | score1 < score2   = GT
-  | score1 > score2   = LT
-  where score1 = score now t1
-        score2 = score now t2
+  | otherwise         = compare score2 score1
+  where score1  = score now ts i1
+        score2  = score now ts i2
+        i1      = uid t1
+        i2      = uid t2
 
 -- return sorted tasks
 sorted :: UTCTime -> Tasks -> Tasks
 sorted _ [] = []
-sorted now ts = sortBy (compareTasks now) ts
+sorted now ts = sortBy (compareTasks now ts) ts
 
 -- renumber tasks, starting at ID
 renumber :: ID -> Tasks -> Tasks
@@ -253,14 +272,20 @@ tasksToActions :: Tasks -> Actions
 tasksToActions [] = []
 tasksToActions (t:ts) = Add (show t) : tasksToActions ts
 
--- calculate a score for a task
-score :: UTCTime -> Task -> Score
-score now t = diff / 60 / 60 / 24
-  where diff = realToFrac $ diffUTCTime now $ created t
+taskFromID :: Tasks -> ID -> Task
+taskFromID (t:ts) i
+  | uid t == i  = t
+  | otherwise   = taskFromID ts i
 
--- round to 2 decimals
-round2Dec :: (RealFrac a) => a -> a
-round2Dec i = fromIntegral (round (i*100)) / 100
+-- calculate a score for a task
+score :: UTCTime -> Tasks -> ID -> Score
+score now ts i = times + ds + dc
+  where diff  = realToFrac $ diffUTCTime now $ created t
+        times = diff / 60 / 60 / 24
+        d     = dependants ts t
+        ds    = sum $ map (score now ts) d
+        dc    = 0.1 * (fromIntegral $ length d)
+        t     = taskFromID ts i
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []
@@ -268,9 +293,10 @@ replace s d (w:ws)
   | s == w    = d : replace s d ws
   | otherwise = w : replace s d ws
 
-prettyNum :: (RealFrac a, Show a) => a -> String
-prettyNum a = s ++ suff
-  where s = replace 'e' '0' $ show $ round2Dec a
-        d = (length $ dropWhile (/= '.') s) - 1
-        suff = if d == -1 then ".00" else replicate (2-d) '0'
+prettyNum :: (RealFloat a, Show a) => a -> String
+prettyNum a = showFFloat (Just 2) a ""
 
+-- return dependants for a task
+dependants :: Tasks -> Task -> [ID]
+dependants ts t = map uid $ filter (\t -> i `elem` (depends t)) ts
+  where i = uid t
