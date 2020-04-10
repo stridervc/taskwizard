@@ -261,6 +261,15 @@ score now t = diff / 60 / 60 / 24
 round2Dec :: (RealFrac a) => a -> a
 round2Dec i = fromIntegral (round (i*100)) / 100
 
+replace :: Char -> Char -> String -> String
+replace _ _ [] = []
+replace s d (w:ws)
+  | s == w    = d : replace s d ws
+  | otherwise = w : replace s d ws
+
 prettyNum :: (RealFrac a, Show a) => a -> String
-prettyNum = show . round2Dec
+prettyNum a = s ++ suff
+  where s = replace 'e' '0' $ show $ round2Dec a
+        d = (length $ dropWhile (/= '.') s) - 1
+        suff = if d == -1 then ".00" else replicate (2-d) '0'
 
