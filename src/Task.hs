@@ -318,7 +318,7 @@ taskFromID (t:ts) i
 
 -- calculate a score for a task
 score :: UTCTime -> Tasks -> ID -> Score
-score now ts i = times + ds + dc + ps + pri
+score now ts i = times + ds + dc + ps + pri - deps
   where diff  = realToFrac $ diffUTCTime now $ created t
         times = diff / 60 / 60 / 24
         d     = dependants ts t
@@ -327,6 +327,7 @@ score now ts i = times + ds + dc + ps + pri
         t     = taskFromID ts i
         ps    = if project t == "" then 0 else 1
         pri   = priority t
+        deps  = 0.1 * (fromIntegral $ length $ depends t)
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []
