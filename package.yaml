@@ -27,6 +27,7 @@ library:
   dependencies:
   - time
   - sort
+  - terminal-size
 
 executables:
   taskwizard:

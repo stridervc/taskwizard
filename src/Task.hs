@@ -17,12 +17,14 @@ module Task
 
 import Data.Time
 import Data.Sort
+import System.Console.Terminal.Size (size, width)
 
 type Desc   = String
 type ID     = Integer
 type Score  = Float
 type Key    = String
 type Value  = String
+type Width  = Int
 
 type Tasks = [Task]
 type Actions = [Action]
@@ -161,21 +163,52 @@ doTask :: Tasks -> ID -> Tasks
 doTask ts i = foldr (\t acc -> if i == uid t then (fTask t):acc else t:acc) [] ts
   where fTask t = t {isdone = True}
 
--- print task
-printTask :: UTCTime -> Task -> IO ()
-printTask now t = do
-  putStrLn $ i ++ "\t" ++ d ++ "\t" ++ s
-  where i = show $ uid t
-        d = desc t
-        s = show $ score now t
-
 todo :: Tasks -> Tasks
 todo = filter (not . isdone)
+
+-- pad string with spaces on the right
+padString :: Width -> String -> String
+padString w s
+  | length s > w  = take w s
+  | otherwise     = s ++ replicate (w-length s) ' '
+
+-- pad string with spaces on the left
+padStringLeft :: Width -> String -> String
+padStringLeft w s
+  | ls > w    = take w s
+  | otherwise = replicate (w-ls) ' ' ++ s
+  where ls = length s
+
+-- print task
+printTask :: [Width] -> UTCTime -> Task -> IO ()
+printTask (iw:dw:sw:[]) now t = do
+  putStrLn $ i ++ " " ++ d ++ " " ++ s
+  where i = padStringLeft iw $ show $ uid t
+        d = padString dw $ desc t
+        s = padString sw $ prettyNum $ score now t
 
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
 printTasks _ [] = return ()
-printTasks now ts = mapM_ (printTask now) $ sorted now $ todo ts
+printTasks now ts = do
+  s <- size   -- console size
+  let maxi = foldl1 max $ map uid ts
+  let iw = length $ show maxi
+  let maxs = foldl1 max $ map (score now) ts
+  let sw = length $ prettyNum maxs
+  let mdw = foldl1 max $ map (length . desc) ts
+
+  putStrLn $ show s
+  case s of
+    Just w -> do
+      let da = width w - iw - sw - 2
+      if da > mdw + 2 then
+        mapM_ (printTask [iw,mdw+2,sw] now) $ sorted now $ todo ts
+      else
+        mapM_ (printTask [iw,da,sw] now) $ sorted now $ todo ts
+    Nothing -> do
+      let dw = 10
+      mapM_ (printTask [iw,dw,sw] now) $ sorted now $ todo ts
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -224,3 +257,11 @@ tasksToActions (t:ts) = Add (show t) : tasksToActions ts
 score :: UTCTime -> Task -> Score
 score now t = diff / 60 / 60 / 24
   where diff = realToFrac $ diffUTCTime now $ created t
+
+-- round to 2 decimals
+round2Dec :: (RealFrac a) => a -> a
+round2Dec i = fromIntegral (round (i*100)) / 100
+
+prettyNum :: (RealFrac a, Show a) => a -> String
+prettyNum = show . round2Dec
+

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5ea67a21ad287d1dc4012c898491b0fdbd99b318b4e323931326cc4038914d43
+-- hash: a1a7bf53479a1b84dd9ff861a03af458ea8c49c394f87431638b9801f1de7348
 
 name:           taskwizard
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
   build-depends:
       base >=4.7 && <5
     , sort
+    , terminal-size
     , time
   default-language: Haskell2010
 
