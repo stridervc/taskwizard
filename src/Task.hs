@@ -198,7 +198,6 @@ printTasks now ts = do
   let sw = length $ prettyNum maxs
   let mdw = foldl1 max $ map (length . desc) ts
 
-  putStrLn $ show s
   case s of
     Just w -> do
       let da = width w - iw - sw - 2
