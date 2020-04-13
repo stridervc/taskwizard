@@ -295,17 +295,16 @@ printTasks now ts = do
   case s of
     Just w -> do
       let da = width w - iw - sw - pw - (columns-1)
-      if da > mdw + 2 then do
+      if da > mdw + 2 then
         printem $ mdw+2
-        ansiReset
-      else do
+      else
         printem da
-        ansiReset
     Nothing -> do
       printem 10
-      ansiReset
 
-    where alternateBool b = b : alternateBool (not b)
+  ansiReset
+
+  where alternateBool b = b : alternateBool (not b)
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
