@@ -253,18 +253,22 @@ padStringLeft w s
   where ls = length s
 
 -- print task
-printTask :: [Width] -> UTCTime -> Tasks -> Task -> IO ()
-printTask ws now ts t = do
+printTask :: [Width] -> (Task, Score, Bool) -> IO ()
+printTask ws (t,s,hi) = do
   if started t then
     ansiStarted
   else
-    ansiReset
+    if hi then
+      ansiOddRow
+    else
+      ansiReset
 
-  putStrLn $ spaces [i,p,d,s]
+  putStrLn $ spaces [i,p,d,ss]
+
   where i   = padStringLeft iw $ show id
         p   = padString pw $ project t
         d   = padString dw $ desc t
-        s   = padStringLeft sw $ prettyNum $ score now ts id
+        ss  = padStringLeft sw $ prettyNum s
         id  = uid t
         iw  = ws!!0
         pw  = ws!!1
@@ -284,17 +288,24 @@ printTasks now ts = do
   let sw = length $ prettyNum maxs
   let mdw = foldl1 max $ map (length . desc) tasks
   let pw = foldl1 max $ map (length . project) tasks
-  let printem = \dw -> mapM_ (printTask [iw,pw,dw,sw] now tasks) tasks
+  let scores = map (score now tasks) $ map uid tasks
+  let tsh = zip3 tasks scores $ alternateBool False
+  let printem = \dw -> mapM_ (printTask [iw,pw,dw,sw]) tsh
 
   case s of
     Just w -> do
       let da = width w - iw - sw - pw - (columns-1)
-      if da > mdw + 2 then
+      if da > mdw + 2 then do
         printem $ mdw+2
-      else
+        ansiReset
+      else do
         printem da
+        ansiReset
     Nothing -> do
       printem 10
+      ansiReset
+
+    where alternateBool b = b : alternateBool (not b)
 
 -- dump actions to list of strings, for saving to file
 dumpActions :: Actions -> [String]
@@ -384,4 +395,10 @@ ansiStarted = setSGR [ SetConsoleIntensity NormalIntensity
                      , SetColor Foreground Vivid White
                      , SetColor Background Dull Green
                      ]
+
+ansiOddRow :: IO ()
+ansiOddRow = setSGR [ SetConsoleIntensity NormalIntensity
+                    , SetColor Foreground Vivid White
+                    , SetPaletteColor Background $ xterm24LevelGray 2
+                    ]
 
