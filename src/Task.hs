@@ -19,6 +19,7 @@ import Data.Time
 import Data.Sort
 import System.Console.Terminal.Size (size, width)
 import Numeric (showFFloat)
+import System.Console.ANSI
 
 type Desc     = String
 type ID       = Integer
@@ -254,6 +255,11 @@ padStringLeft w s
 -- print task
 printTask :: [Width] -> UTCTime -> Tasks -> Task -> IO ()
 printTask ws now ts t = do
+  if started t then
+    ansiStarted
+  else
+    ansiReset
+
   putStrLn $ spaces [i,p,d,s]
   where i   = padStringLeft iw $ show id
         p   = padString pw $ project t
@@ -366,3 +372,16 @@ prettyNum a = showFFloat (Just 2) a ""
 dependants :: Tasks -> Task -> [ID]
 dependants ts t = map uid $ filter (\t -> i `elem` (depends t)) ts
   where i = uid t
+
+ansiReset :: IO ()
+ansiReset = setSGR [ SetConsoleIntensity NormalIntensity
+                   , SetColor Foreground Vivid White
+                   , SetColor Background Dull Black
+                   ]
+
+ansiStarted :: IO ()
+ansiStarted = setSGR [ SetConsoleIntensity NormalIntensity
+                     , SetColor Foreground Vivid White
+                     , SetColor Background Dull Green
+                     ]
+

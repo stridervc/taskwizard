@@ -28,6 +28,7 @@ library:
   - time
   - sort
   - terminal-size
+  - ansi-terminal
 
 executables:
   taskwizard:

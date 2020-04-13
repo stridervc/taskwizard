@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a1a7bf53479a1b84dd9ff861a03af458ea8c49c394f87431638b9801f1de7348
+-- hash: 7912ec6b97d73e706d6eeb0fb40edc666c5a5053f39470608a8bf01aa1c25dbd
 
 name:           taskwizard
 version:        0.1.0.0
@@ -33,7 +33,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      ansi-terminal
+    , base >=4.7 && <5
     , sort
     , terminal-size
     , time
