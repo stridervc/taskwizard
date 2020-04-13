@@ -40,11 +40,14 @@ data Task = Task
   , depends   :: [ID]
   , project   :: Project
   , priority  :: Priority
+  , started   :: Bool
   } deriving (Eq)
 
 data Action = Add String
             | Delete ID
             | Done ID
+            | Start ID
+            | Stop ID
             deriving (Eq)
 
 csv :: (Show a) => [a] -> String
@@ -79,8 +82,9 @@ propertyString ps v f d
 instance Show Task where
   show t =
     spaces  [ "uid:" ++ i
-            , propertyString "done" (isdone t) show False
             , "created:" ++ ct
+            , propertyString "done" (isdone t) show False
+            , propertyString "started" (started t) show False
             , propertyString "depends" (depends t) csv []
             , propertyString "project" (project t) id ""
             , propertyString "priority" (priority t) show 0
@@ -103,6 +107,7 @@ isProperty s = do
         "depends"   -> True
         "project"   -> True
         "priority"  -> True
+        "started "  -> True
         otherwise   -> False
 
 -- apply iff property
@@ -120,6 +125,7 @@ applyProperty t s
       "depends"   -> t {depends = uncsv v}
       "project"   -> t {project = v}
       "priority"  -> t {priority = read v}
+      "started "  -> t {priority = read v}
       otherwise   -> t
   | otherwise = t
 
@@ -127,6 +133,8 @@ instance Show Action where
   show (Add s)    = "add " ++ s
   show (Delete i) = "delete " ++ show i
   show (Done i)   = "done " ++ show i
+  show (Start i)  = "start " ++ show i
+  show (Stop i)   = "stop " ++ show i
 
 -- create a new, empty task
 newTask :: UTCTime -> ID -> Task
@@ -138,6 +146,7 @@ newTask ct i =
         , depends   = []
         , project   = ""
         , priority  = 0
+        , started   = False
         }
 
 -- parse and add a task to tasks
@@ -154,6 +163,8 @@ parseAction s
   | cmd == "add"    = Add rest
   | cmd == "delete" = Delete $ read rest
   | cmd == "done"   = Done $ read rest
+  | cmd == "start"  = Start $ read rest
+  | cmd == "stop"   = Stop $ read rest
   where cmd  = head $ words s
         rest = unwords $ tail $ words s
 
@@ -171,6 +182,8 @@ parseExactAction ct ts s
   | not exists      = Left $ "Unknown ID: " ++ rest
   | cmd == "delete" = Right $ Delete id
   | cmd == "done"   = Right $ Done id
+  | cmd == "start"  = Right $ Start id
+  | cmd == "stop"   = Right $ Stop id
   | otherwise       = Left $ "Unknown command: " ++ cmd
   where cmd   = head $ words s
         rest  = unwords $ tail $ words s
@@ -189,6 +202,8 @@ applyAction :: UTCTime -> Tasks -> Action -> Tasks
 applyAction ct ts (Add s)   = addTask ct ts s
 applyAction _ ts (Delete i) = deleteTask ts i
 applyAction _ ts (Done i)   = doTask ts i
+applyAction _ ts (Start i)  = startTask ts i
+applyAction _ ts (Stop i)   = stopTask ts i
 
 applyActions :: UTCTime -> Tasks -> Actions -> Tasks
 applyActions ct ts as = foldl (applyAction ct) ts as
@@ -210,7 +225,15 @@ deleteTask ts i = foldr (\t acc -> if i == uid t then acc else t:acc) [] ts
 -- mark task as done
 doTask :: Tasks -> ID -> Tasks
 doTask ts i = foldr (\t acc -> if i == uid t then (fTask t):acc else t:acc) [] ts
-  where fTask t = t {isdone = True}
+  where fTask t = t {isdone = True, started = False}
+
+startTask :: Tasks -> ID -> Tasks
+startTask ts i = foldr (\t acc -> if i == uid t then (sTask t):acc else t:acc) [] ts
+  where sTask t = t {started = True}
+
+stopTask :: Tasks -> ID -> Tasks
+stopTask ts i = foldr (\t acc -> if i == uid t then (sTask t):acc else t:acc) [] ts
+  where sTask t = t {started = False}
 
 todo :: Tasks -> Tasks
 todo = filter (not . isdone)
@@ -318,7 +341,7 @@ taskFromID (t:ts) i
 
 -- calculate a score for a task
 score :: UTCTime -> Tasks -> ID -> Score
-score now ts i = times + ds + dc + ps + pri - deps
+score now ts i = times + ds + dc + ps + pri - deps + st
   where diff  = realToFrac $ diffUTCTime now $ created t
         times = diff / 60 / 60 / 24
         d     = dependants ts t
@@ -328,6 +351,7 @@ score now ts i = times + ds + dc + ps + pri - deps
         ps    = if project t == "" then 0 else 1
         pri   = priority t
         deps  = 0.1 * (fromIntegral $ length $ depends t)
+        st    = if started t then 10 else 0
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []

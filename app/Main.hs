@@ -34,6 +34,8 @@ showHelp = do
   putStrLn "  delete [id] - Delete task with ID"
   putStrLn "  done [id]   - Mark task with ID as done"
   putStrLn "  refactor    - Renumber tasks and clean up the save file"
+  putStrLn "  start       - Mark a task as started"
+  putStrLn "  stop        - Mark a task as not started"
   putStrLn ""
 
 main :: IO ()
