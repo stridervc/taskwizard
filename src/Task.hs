@@ -8,11 +8,13 @@ module Task
   , Action (..)
   , printTasks
   , tasksFromActions
+  , taskFromID
   , parseExactAction
   , dumpActions
   , unDumpActions
   , refactor
   , tasksToActions
+  , descContains
   ) where
 
 import Data.Time
@@ -400,4 +402,7 @@ ansiOddRow = setSGR [ SetConsoleIntensity NormalIntensity
                     , SetColor Foreground Vivid White
                     , SetPaletteColor Background $ xterm24LevelGray 2
                     ]
+
+descContains :: String -> Task -> Bool
+descContains s t = s `elem` (words $ desc t)
 

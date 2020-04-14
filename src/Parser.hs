@@ -1,5 +1,6 @@
 module Parser
   ( Parser
+  , Filter (..)
   , eval
   ) where
 
@@ -124,6 +125,15 @@ command =
   <|> do
     c <- symbol "ls"
     return "list"
+  <|> do
+    c <- symbol "add"
+    return c
+  <|> do
+    c <- symbol "start"
+    return c
+  <|> do
+    c <- symbol "stop"
+    return c
 
 tfilter :: Parser Filter
 tfilter =
@@ -143,6 +153,9 @@ filters =
       tfilter)
     return (f:fs)
 
+arguments :: Parser String
+arguments = some alphanum
+
 data Filter = Fid ID
             | Ftext String
             deriving (Eq, Show)
@@ -154,12 +167,21 @@ type Arguments = String
 expr :: Parser (Command, [Filter], Arguments)
 expr =
   do
+    fs <- filters
     c <- command
-    return (c, [], "")
+    args <- arguments
+    return (c, fs, args)
   <|> do
     fs <- filters
     c <- command
     return (c, fs, "")
+  <|> do
+    c <- command
+    args <- arguments
+    return (c, [], args)
+  <|> do
+    c <- command
+    return (c, [], "")
 
 eval :: String -> (Command, [Filter], Arguments)
 eval xs = case (parse expr xs) of

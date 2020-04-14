@@ -39,6 +39,19 @@ showHelp = do
   putStrLn "  [id] stop   - Mark a task as not started"
   putStrLn ""
 
+filterTasks :: [Filter] -> Tasks -> Tasks
+filterTasks _ [] = []
+filterTasks [] _ = []
+filterTasks (f:fs) ts = do
+  case f of
+    Fid i -> taskFromID ts i : filterTasks fs ts
+    Ftext s -> (filter (descContains s) ts) ++ filterTasks fs ts
+
+printTasks' now ts = do
+  putStrLn ""
+  printTasks now ts
+  putStrLn ""
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -49,21 +62,15 @@ main = do
   let tasks = tasksFromActions now actions
 
   case length args of
-    0 -> do
-      putStrLn ""
-      printTasks now tasks
-      putStrLn ""
+    0 -> printTasks' now tasks
 
     otherwise -> do
-      let (cmd,filter,arguments) = eval $ unwords args
-      case cmd of
-        "list" -> do
-          putStrLn ""
-          printTasks now tasks
-          putStrLn ""
+      case eval $ unwords args of
+        ("list", [], "") -> printTasks' now tasks
+        ("list", fs, "") -> printTasks' now $ filterTasks fs tasks
 
-        "refactor" -> do
+        ("refactor", [], "") -> do
           saveActions filename $ tasksToActions $ refactor now tasks
-        "help" -> showHelp
+        ("help", [], "") -> showHelp
 
         --saveActions filename $ actions ++ [a]
