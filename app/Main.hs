@@ -66,11 +66,16 @@ main = do
 
     otherwise -> do
       case eval $ unwords args of
-        ("list", [], "") -> printTasks' now tasks
-        ("list", fs, "") -> printTasks' now $ filterTasks fs tasks
+        ("list", [], "") ->
+          printTasks' now tasks
+        ("list", fs, "") ->
+          printTasks' now $ filterTasks fs tasks
 
-        ("refactor", [], "") -> do
-          saveActions filename $ tasksToActions $ refactor now tasks
-        ("help", [], "") -> showHelp
-
-        --saveActions filename $ actions ++ [a]
+        ("refactor", [], "") ->
+          saveActions filename $ tasksToActions $
+            refactor now tasks
+        ("help", [], "") ->
+          showHelp
+        ("add", [], a) -> do
+          let action = parseAddAction now tasks a
+          saveActions filename $ actions ++ [action]

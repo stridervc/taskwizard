@@ -154,7 +154,7 @@ filters =
     return (f:fs)
 
 arguments :: Parser String
-arguments = some alphanum
+arguments = some item
 
 data Filter = Fid ID
             | Ftext String

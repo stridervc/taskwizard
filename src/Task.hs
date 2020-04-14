@@ -15,6 +15,7 @@ module Task
   , refactor
   , tasksToActions
   , descContains
+  , parseAddAction
   ) where
 
 import Data.Time
