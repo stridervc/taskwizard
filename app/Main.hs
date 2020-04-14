@@ -52,10 +52,23 @@ printTasks' now ts = do
   printTasks now ts
   putStrLn ""
 
-doTaskActions :: [Filter] -> Tasks -> Actions
-doTaskActions fs ts = map Done ids
+-- apply action to ids of filtered tasks and return actions
+taskActions :: (ID -> Action) -> [Filter] -> Tasks -> Actions
+taskActions a fs ts = map a ids
   where ts' = filterTasks fs ts
         ids = map uid ts'
+
+doneTask = Done
+doneTasks = taskActions doneTask
+
+startTask = Start
+startTasks = taskActions startTask
+
+stopTask = Stop
+stopTasks = taskActions stopTask
+
+deleteTask = Delete
+deleteTasks = taskActions deleteTask
 
 main :: IO ()
 main = do
@@ -89,5 +102,14 @@ main = do
           saveActions filename $ actions ++ [action]
 
         ("done", fs, "") ->
-          saveActions filename $ actions ++ doTaskActions fs tasks
+          saveActions filename $ actions ++ doneTasks fs tasks
+
+        ("start", fs, "") ->
+          saveActions filename $ actions ++ startTasks fs tasks
+
+        ("stop", fs, "") ->
+          saveActions filename $ actions ++ stopTasks fs tasks
+
+        ("delete", fs, "") ->
+          saveActions filename $ actions ++ deleteTasks fs tasks
 
