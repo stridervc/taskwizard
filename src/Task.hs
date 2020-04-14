@@ -388,10 +388,7 @@ dependants ts t = map uid $ filter (\t -> i `elem` (depends t)) ts
   where i = uid t
 
 ansiReset :: IO ()
-ansiReset = setSGR [ SetConsoleIntensity NormalIntensity
-                   , SetColor Foreground Vivid White
-                   , SetColor Background Dull Black
-                   ]
+ansiReset = setSGR [ Reset ]
 
 ansiStarted :: IO ()
 ansiStarted = setSGR [ SetConsoleIntensity NormalIntensity
