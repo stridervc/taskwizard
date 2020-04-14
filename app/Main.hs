@@ -32,11 +32,11 @@ showHelp = do
   putStrLn "taskwizard help"
   putStrLn "  (nothing)   - List tasks"
   putStrLn "  add [desc]  - Add task"
-  putStrLn "  delete [id] - Delete task with ID"
-  putStrLn "  done [id]   - Mark task with ID as done"
+  putStrLn "  [id] delete - Delete task with ID"
+  putStrLn "  [id] done   - Mark task with ID as done"
   putStrLn "  refactor    - Renumber tasks and clean up the save file"
-  putStrLn "  start       - Mark a task as started"
-  putStrLn "  stop        - Mark a task as not started"
+  putStrLn "  [id] start  - Mark a task as started"
+  putStrLn "  [id] stop   - Mark a task as not started"
   putStrLn ""
 
 main :: IO ()
@@ -57,6 +57,11 @@ main = do
     otherwise -> do
       let (cmd,filter,arguments) = eval $ unwords args
       case cmd of
+        "list" -> do
+          putStrLn ""
+          printTasks now tasks
+          putStrLn ""
+
         "refactor" -> do
           saveActions filename $ tasksToActions $ refactor now tasks
         "help" -> showHelp

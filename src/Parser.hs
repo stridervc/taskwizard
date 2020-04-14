@@ -114,9 +114,16 @@ symbol :: String -> Parser String
 symbol xs = token (string xs)
 
 command :: Parser String
-command = do
-  c <- symbol "help"
-  return c
+command =
+  do
+    c <- symbol "help"
+    return c
+  <|> do
+    c <- symbol "list"
+    return c
+  <|> do
+    c <- symbol "ls"
+    return "list"
 
 data Filter = Fid ID
             | Ftext String
