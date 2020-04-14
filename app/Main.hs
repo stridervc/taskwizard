@@ -30,13 +30,15 @@ loadActions f = do
 showHelp :: IO ()
 showHelp = do
   putStrLn "taskwizard help"
-  putStrLn "  (nothing)   - List tasks"
-  putStrLn "  add [desc]  - Add task"
-  putStrLn "  [id] delete - Delete task with ID"
-  putStrLn "  [id] done   - Mark task with ID as done"
-  putStrLn "  refactor    - Renumber tasks and clean up the save file"
-  putStrLn "  [id] start  - Mark a task as started"
-  putStrLn "  [id] stop   - Mark a task as not started"
+  putStrLn "  (nothing)       - List tasks"
+  putStrLn "  add desc        - Add task"
+  putStrLn "  <filter> delete - Delete task with ID"
+  putStrLn "  <filter> done   - Mark tasks as done"
+  putStrLn "  refactor        - Renumber tasks and clean up the save file"
+  putStrLn "  <filter> start  - Mark tasks as started"
+  putStrLn "  <filter> stop   - Mark tasks as not started"
+  putStrLn ""
+  putStrLn "where filter is a comma separated list of ids or keywords"
   putStrLn ""
 
 filterTasks :: [Filter] -> Tasks -> Tasks
