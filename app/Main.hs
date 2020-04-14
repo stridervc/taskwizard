@@ -4,6 +4,7 @@ module Main where
 
 import Prelude hiding (readFile)
 import Task
+import Parser
 import System.Directory (getHomeDirectory, doesFileExist)
 import System.Environment
 import System.IO.Strict (readFile)
@@ -54,17 +55,10 @@ main = do
       putStrLn ""
 
     otherwise -> do
-      let eitherAction = parseExactAction now tasks $ unwords args
-      let cmd  = head args
-      let rest = unwords $ tail args
-      --let action = parseAction $ unwords args
-      
+      let (cmd,filter,arguments) = eval $ unwords args
       case cmd of
         "refactor" -> do
           saveActions filename $ tasksToActions $ refactor now tasks
         "help" -> showHelp
 
-        otherwise  -> do
-          case eitherAction of
-            Right a -> saveActions filename $ actions ++ [a]
-            Left e  -> putStrLn e
+        --saveActions filename $ actions ++ [a]
