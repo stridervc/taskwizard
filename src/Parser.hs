@@ -73,11 +73,11 @@ string (x:xs) = do
 
 ident :: Parser String
 ident = do
-  x <- lower
+  x <- alphanum
   xs <- many alphanum
   return (x:xs)
 
-nat :: Parser Int
+nat :: Parser Integer
 nat = do
   xs <- some digit
   return $ read xs
@@ -87,7 +87,7 @@ space = do
   many (sat isSpace)
   return ()
 
-int :: Parser Int
+int :: Parser Integer
 int = do
     char '-'
     n <- nat
@@ -104,10 +104,10 @@ token p = do
 identifier :: Parser String
 identifier = token ident
 
-natural :: Parser Int
+natural :: Parser Integer
 natural = token nat
 
-integer :: Parser Int
+integer :: Parser Integer
 integer = token int
 
 symbol :: String -> Parser String
@@ -125,6 +125,24 @@ command =
     c <- symbol "ls"
     return "list"
 
+tfilter :: Parser Filter
+tfilter =
+  do
+    i <- integer
+    return (Fid i)
+  <|> do
+    t <- ident
+    return (Ftext t)
+
+filters :: Parser [Filter]
+filters =
+  do
+    f <- tfilter
+    fs <- many (do
+      symbol ","
+      tfilter)
+    return (f:fs)
+
 data Filter = Fid ID
             | Ftext String
             deriving (Eq, Show)
@@ -132,12 +150,16 @@ data Filter = Fid ID
 type Command = String
 type Arguments = String
 
--- [filter[,filter, filter filter]] [command] [arguments]
+-- [filter[,filter[,..]]] [command] [arguments]
 expr :: Parser (Command, [Filter], Arguments)
-expr = do
-  c <- command
-
-  return (c, [], "")
+expr =
+  do
+    c <- command
+    return (c, [], "")
+  <|> do
+    fs <- filters
+    c <- command
+    return (c, fs, "")
 
 eval :: String -> (Command, [Filter], Arguments)
 eval xs = case (parse expr xs) of
