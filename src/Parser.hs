@@ -134,6 +134,9 @@ command =
   <|> do
     c <- symbol "stop"
     return c
+  <|> do
+    c <- symbol "done"
+    return c
 
 tfilter :: Parser Filter
 tfilter =

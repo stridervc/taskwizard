@@ -9,7 +9,6 @@ module Task
   , printTasks
   , tasksFromActions
   , taskFromID
-  , parseExactAction
   , dumpActions
   , unDumpActions
   , refactor
@@ -180,6 +179,7 @@ parseAddAction ct ts s = Add $ show t
         w   = words s
         d   = unwords $ filter (not . isProperty) w
 
+{-
 parseExactAction :: UTCTime -> Tasks -> String -> Either String Action
 parseExactAction ct ts s
   | cmd == "add"    = Right $ parseAddAction ct ts rest
@@ -193,6 +193,7 @@ parseExactAction ct ts s
         rest  = unwords $ tail $ words s
         id    = read rest
         exists  = uidExists ts id
+-}
 
 splitProperty :: String -> Maybe (Key, Value)
 splitProperty s

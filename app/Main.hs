@@ -52,6 +52,11 @@ printTasks' now ts = do
   printTasks now ts
   putStrLn ""
 
+doTaskActions :: [Filter] -> Tasks -> Actions
+doTaskActions fs ts = map Done ids
+  where ts' = filterTasks fs ts
+        ids = map uid ts'
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -68,14 +73,21 @@ main = do
       case eval $ unwords args of
         ("list", [], "") ->
           printTasks' now tasks
+
         ("list", fs, "") ->
           printTasks' now $ filterTasks fs tasks
 
         ("refactor", [], "") ->
           saveActions filename $ tasksToActions $
             refactor now tasks
+
         ("help", [], "") ->
           showHelp
+
         ("add", [], a) -> do
           let action = parseAddAction now tasks a
           saveActions filename $ actions ++ [action]
+
+        ("done", fs, "") ->
+          saveActions filename $ actions ++ doTaskActions fs tasks
+
