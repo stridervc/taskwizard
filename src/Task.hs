@@ -19,7 +19,7 @@ module Task
 
 import Data.Time
 import Data.Sort
-import System.Console.Terminal.Size (size, width)
+import System.Console.Terminal.Size (size, width, height)
 import Numeric (showFFloat)
 import System.Console.ANSI
 
@@ -294,17 +294,18 @@ printTasks now ts = do
   let pw = foldl1 max $ map (length . project) tasks
   let scores = map (score now tasks) $ map uid tasks
   let tsh = zip3 tasks scores $ alternateBool False
-  let printem = \dw -> mapM_ (printTask [iw,pw,dw,sw]) tsh
+  let printem = \dw n -> mapM_ (printTask [iw,pw,dw,sw]) $ take n tsh
 
   case s of
-    Just w -> do
-      let da = width w - iw - sw - pw - (columns-1)
+    Just s -> do
+      let da = width s - iw - sw - pw - (columns-1)
+      let n = height s - 5
       if da > mdw + 2 then
-        printem $ mdw+2
+        printem (mdw+2) n
       else
-        printem da
+        printem da n
     Nothing -> do
-      printem 10
+      printem 10 10
 
   ansiReset
 
