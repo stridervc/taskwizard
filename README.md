@@ -22,7 +22,8 @@ This script should be run as a non root user. It contains comments with
 more information.
 
 After installing the Haskell stack, clone the repository to a suitable
-directory and build and install.
+directory and build and install. The build will probably take a long time
+the first time, as the Haskell stack will download and build all dependencies.
 ```
 git clone git@github.com:stridervc/taskwizard.git
 cd taskwizard
