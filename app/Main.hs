@@ -47,7 +47,7 @@ filterTasks [] _ = []
 filterTasks (f:fs) ts = do
   case f of
     Fid i -> taskFromID ts i : filterTasks fs ts
-    Ftext s -> (filter (descContains s) ts) ++ filterTasks fs ts
+    Ftext s -> filter (descContains s) ts ++ filterTasks fs ts
 
 printTasks' now ts = do
   putStrLn ""
@@ -84,7 +84,7 @@ main = do
   case length args of
     0 -> printTasks' now tasks
 
-    otherwise -> do
+    _ -> do
       case eval $ unwords args of
         ("list", [], "") ->
           printTasks' now tasks
