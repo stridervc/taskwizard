@@ -38,6 +38,7 @@ showHelp = do
   putStrLn "  <filter> start       - Mark tasks as started"
   putStrLn "  <filter> stop        - Mark tasks as not started"
   putStrLn "  <filter> modify desc - Modify task"
+  putStrLn "  <filter> show        - Show task details"
   putStrLn ""
   putStrLn "where filter is a comma separated list of ids or keywords"
   putStrLn ""
@@ -120,3 +121,6 @@ main = do
 
         ("modify", fs, s) ->
           saveActions filename $ actions ++ modifyTasks fs s tasks
+
+        ("show", fs, "") ->
+          mapM_ taskDetail $ filterTasks fs tasks
