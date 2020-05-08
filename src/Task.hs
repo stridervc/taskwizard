@@ -15,6 +15,7 @@ module Task
   , tasksToActions
   , descContains
   , parseAddAction
+  , modifyTask
   ) where
 
 import Data.Time
@@ -51,6 +52,7 @@ data Action = Add String
             | Done ID
             | Start ID
             | Stop ID
+            | Modify ID String
             deriving (Eq)
 
 csv :: (Show a) => [a] -> String
@@ -128,16 +130,17 @@ applyProperty t s
       "depends"   -> t {depends = uncsv v}
       "project"   -> t {project = v}
       "priority"  -> t {priority = read v}
-      "started "  -> t {priority = read v}
+      "started "  -> t {started = read v}
       otherwise   -> t
   | otherwise = t
 
 instance Show Action where
-  show (Add s)    = "add " ++ s
-  show (Delete i) = "delete " ++ show i
-  show (Done i)   = "done " ++ show i
-  show (Start i)  = "start " ++ show i
-  show (Stop i)   = "stop " ++ show i
+  show (Add s)      = "add " ++ s
+  show (Delete i)   = "delete " ++ show i
+  show (Done i)     = "done " ++ show i
+  show (Start i)    = "start " ++ show i
+  show (Stop i)     = "stop " ++ show i
+  show (Modify i s) = "modify " ++ show i ++ " " ++ s
 
 -- create a new, empty task
 newTask :: UTCTime -> ID -> Task
@@ -161,6 +164,21 @@ addTask ct ts s = t:ts
         w   = words s
         d   = unwords $ filter (not . isProperty) w
 
+-- replace a task with the modification
+-- first, process properties and tags
+-- if anything remains, make it the new desc
+modifyTask :: Tasks -> ID -> String -> Tasks
+modifyTask ts i s
+  | uidExists ts i  = t':ts'
+  | otherwise       = ts
+  where ts'   = deleteTask ts i
+        t''   = taskFromID ts i
+        w     = words s
+        t'''  = foldl applyProperty t'' w
+        d     = unwords $ filter (not . isProperty) w
+        t'    = if d == "" then t''' else t''''
+        t'''' = t''' { desc = d }
+
 parseAction :: String -> Action
 parseAction s
   | cmd == "add"    = Add rest
@@ -168,8 +186,11 @@ parseAction s
   | cmd == "done"   = Done $ read rest
   | cmd == "start"  = Start $ read rest
   | cmd == "stop"   = Stop $ read rest
-  where cmd  = head $ words s
-        rest = unwords $ tail $ words s
+  | cmd == "modify" = Modify id rest'
+  where cmd   = head $ words s
+        rest  = unwords $ tail $ words s
+        id    = read $ head $ words rest
+        rest' = unwords $ tail $ words rest
 
 parseAddAction :: UTCTime -> Tasks -> String -> Action
 parseAddAction ct ts s = Add $ show t
@@ -178,22 +199,6 @@ parseAddAction ct ts s = Add $ show t
         t'' = newTask ct $ nextUid ts
         w   = words s
         d   = unwords $ filter (not . isProperty) w
-
-{-
-parseExactAction :: UTCTime -> Tasks -> String -> Either String Action
-parseExactAction ct ts s
-  | cmd == "add"    = Right $ parseAddAction ct ts rest
-  | not exists      = Left $ "Unknown ID: " ++ rest
-  | cmd == "delete" = Right $ Delete id
-  | cmd == "done"   = Right $ Done id
-  | cmd == "start"  = Right $ Start id
-  | cmd == "stop"   = Right $ Stop id
-  | otherwise       = Left $ "Unknown command: " ++ cmd
-  where cmd   = head $ words s
-        rest  = unwords $ tail $ words s
-        id    = read rest
-        exists  = uidExists ts id
--}
 
 splitProperty :: String -> Maybe (Key, Value)
 splitProperty s
@@ -204,11 +209,12 @@ splitProperty s
 
 -- apply an action to a list of tasks
 applyAction :: UTCTime -> Tasks -> Action -> Tasks
-applyAction ct ts (Add s)   = addTask ct ts s
-applyAction _ ts (Delete i) = deleteTask ts i
-applyAction _ ts (Done i)   = doTask ts i
-applyAction _ ts (Start i)  = startTask ts i
-applyAction _ ts (Stop i)   = stopTask ts i
+applyAction ct ts (Add s)     = addTask ct ts s
+applyAction _ ts (Delete i)   = deleteTask ts i
+applyAction _ ts (Done i)     = doTask ts i
+applyAction _ ts (Start i)    = startTask ts i
+applyAction _ ts (Stop i)     = stopTask ts i
+applyAction _ ts (Modify i s) = modifyTask ts i s
 
 applyActions :: UTCTime -> Tasks -> Actions -> Tasks
 applyActions ct ts as = foldl (applyAction ct) ts as

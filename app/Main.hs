@@ -72,6 +72,9 @@ stopTasks = taskActions stopTask
 deleteTask = Delete
 deleteTasks = taskActions deleteTask
 
+modifyTasks fs s ts = taskActions a fs ts
+  where a = (\i -> Modify i s)
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -83,7 +86,6 @@ main = do
 
   case length args of
     0 -> printTasks' now tasks
-
     _ -> do
       case eval $ unwords args of
         ("list", [], "") ->
@@ -115,3 +117,5 @@ main = do
         ("delete", fs, "") ->
           saveActions filename $ actions ++ deleteTasks fs tasks
 
+        ("modify", fs, s) ->
+          saveActions filename $ actions ++ modifyTasks fs s tasks

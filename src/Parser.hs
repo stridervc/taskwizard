@@ -140,6 +140,9 @@ command =
   <|> do
     c <- symbol "delete"
     return c
+  <|> do
+    c <- symbol "modify"
+    return c
 
 tfilter :: Parser Filter
 tfilter =
