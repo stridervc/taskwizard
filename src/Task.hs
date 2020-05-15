@@ -425,5 +425,7 @@ taskDetail t = do
   putStrLn $ "Depends:  " ++ show (depends t)
   putStrLn $ "Project:  " ++ project t
   putStrLn $ "Priority: " ++ show (priority t)
+  putStrLn ""
   putStrLn $ desc t
+  putStrLn ""
 
