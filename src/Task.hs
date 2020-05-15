@@ -274,7 +274,9 @@ printTask ws (t,s,hi) = do
     else
       ansiReset
 
-  putStrLn $ spaces [i,p,d,ss]
+  putStr $ spaces [i,p,d,ss]
+  ansiReset
+  putStrLn ""
 
   where i   = padStringLeft iw $ show id
         p   = padString pw $ project t
