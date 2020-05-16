@@ -278,15 +278,20 @@ printTask ws (t,s,hi) = do
   ansiReset
   putStrLn ""
 
-  where i   = padStringLeft iw $ show id
-        p   = padString pw $ project t
-        d   = padString dw $ desc t
-        ss  = padStringLeft sw $ prettyNum s
+  where i   = ic ++ (padStringLeft iw $ show id)
+        p   = pc ++ (padString pw $ project t)
+        d   = dc ++ (padString dw $ desc t)
+        ss  = sc ++ (padStringLeft sw $ prettyNum s)
         id  = uid t
         iw  = ws!!0
         pw  = ws!!1
         dw  = ws!!2
         sw  = ws!!3
+        ic  = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid White ]
+        pc  = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
+        sc  = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid Yellow ]
+        dc  = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid White ]
+
 
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
@@ -403,7 +408,7 @@ ansiReset = setSGR [ Reset ]
 ansiStarted :: IO ()
 ansiStarted = setSGR [ SetConsoleIntensity NormalIntensity
                      , SetColor Foreground Vivid White
-                     , SetColor Background Dull Green
+                     , SetColor Background Dull Magenta
                      ]
 
 ansiOddRow :: IO ()
