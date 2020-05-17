@@ -31,10 +31,11 @@ showHelp :: IO ()
 showHelp = do
   putStrLn "taskwizard help"
   putStrLn "  (nothing)            - List tasks"
-  putStrLn "  add desc             - Add task"
+  putStrLn "  add [desc]           - Add task"
+  putStrLn "  projects             - Show list of projects and number of tasks in them"
+  putStrLn "  refactor             - Renumber tasks and clean up the save file"
   putStrLn "  <filter> delete      - Delete task with ID"
   putStrLn "  <filter> done        - Mark tasks as done"
-  putStrLn "  refactor             - Renumber tasks and clean up the save file"
   putStrLn "  <filter> start       - Mark tasks as started"
   putStrLn "  <filter> stop        - Mark tasks as not started"
   putStrLn "  <filter> modify desc - Modify task"
@@ -124,3 +125,6 @@ main = do
 
         ("show", fs, "") ->
           mapM_ taskDetail $ filterTasks fs tasks
+
+        ("projects", [], "") ->
+          printProjectCounts tasks

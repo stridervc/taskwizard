@@ -146,6 +146,9 @@ command =
   <|> do
     c <- symbol "show"
     return c
+  <|> do
+    c <- symbol "projects"
+    return c
 
 tfilter :: Parser Filter
 tfilter =

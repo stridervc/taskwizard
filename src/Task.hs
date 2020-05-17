@@ -17,10 +17,12 @@ module Task
   , parseAddAction
   , modifyTask
   , taskDetail
+  , printProjectCounts
   ) where
 
 import Data.Time
 import Data.Sort
+import Data.List
 import System.Console.Terminal.Size (size, width, height)
 import Numeric (showFFloat)
 import System.Console.ANSI
@@ -33,6 +35,7 @@ type Value    = String
 type Width    = Int
 type Project  = String
 type Priority = Float
+type Count    = Int
 
 type Tasks = [Task]
 type Actions = [Action]
@@ -433,4 +436,17 @@ taskDetail t = do
   putStrLn ""
   putStrLn $ desc t
   putStrLn ""
+
+-- return projects and the number of tasks in them
+projectCounts :: Tasks -> [(Project,Count)]
+projectCounts ts = [(p, count p) | p <- projects]
+  where projects  = nub [project t | t <- ts]
+        count     = \p -> length [t | t <- ts, project t == p]
+
+printProjectCounts :: Tasks -> IO ()
+printProjectCounts ts = do
+  mapM_ print' pcs
+  where pcs'    = reverse $ sortOn snd $ projectCounts $ todo ts
+        pcs     = [pc | pc <- pcs', fst pc /= ""]
+        print'  = \(p,c) -> putStrLn $ p ++ "  " ++ show c
 
