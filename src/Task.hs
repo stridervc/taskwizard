@@ -59,6 +59,16 @@ data Action = Add String
             | Modify ID String
             deriving (Eq)
 
+-- list of properties we understand
+properties =  [ "uid"
+              , "done"
+              , "created"
+              , "depends"
+              , "project"
+              , "priority"
+              , "started"
+              ]
+
 csv :: (Show a) => [a] -> String
 csv [] = ""
 csv (a:as) = show a ++ comma ++ csv as
@@ -102,22 +112,21 @@ instance Show Task where
     where i   = show $ uid t
           ct  = spacesToUnderscores $ show $ created t
 
+-- return the full name of a property from a shortened form
+propertyFromShort :: String -> Maybe Key
+propertyFromShort k = if length matches == 1 then Just (head matches) else Nothing
+  where matches = [p | p <- properties, k `isPrefixOf` p]
+
 -- check if a string is a known property
 isProperty :: String -> Bool
 isProperty s = do
   let p = splitProperty s
-  case p of
-    Nothing -> False
-    Just (k,v) -> do
-      case k of
-        "uid"       -> True
-        "done"      -> True
-        "created"   -> True
-        "depends"   -> True
-        "project"   -> True
-        "priority"  -> True
-        "started "  -> True
-        otherwise   -> False
+  case splitProperty s of
+    Nothing     -> False
+    Just (k,v)  -> do
+      case propertyFromShort k of
+        Nothing -> False
+        Just _  -> True
 
 -- apply iff property
 -- take a task and a string
@@ -126,7 +135,8 @@ isProperty s = do
 applyProperty :: Task -> String -> Task
 applyProperty t s
   | isProperty s  = do
-    let Just (k,v) = splitProperty s
+    let Just (k',v) = splitProperty s
+    let Just k = propertyFromShort k'
     case k of
       "uid"       -> t {uid = read v}
       "done"      -> t {isdone = read v} 
