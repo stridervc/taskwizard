@@ -107,6 +107,9 @@ main = do
         ("add", [], a) -> do
           let action = parseAddAction now tasks a
           saveActions filename $ actions ++ [action]
+          let nts = tasksFromActions now $ actions ++ [action]
+          let nt = head nts
+          putStrLn $ "Added task with ID " ++ show (uid nt)
 
         ("done", fs, "") ->
           saveActions filename $ actions ++ doneTasks fs tasks
