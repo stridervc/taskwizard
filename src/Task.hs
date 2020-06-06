@@ -13,7 +13,6 @@ module Task
   , unDumpActions
   , refactor
   , tasksToActions
-  , descContains
   , parseAddAction
   , modifyTask
   , taskDetail
@@ -429,9 +428,6 @@ ansiOddRow = setSGR [ SetConsoleIntensity NormalIntensity
                     , SetColor Foreground Vivid White
                     , SetPaletteColor Background $ xterm24LevelGray 2
                     ]
-
-descContains :: String -> Task -> Bool
-descContains s t = s `elem` (words $ desc t)
 
 -- print task detail
 taskDetail :: Task -> IO ()

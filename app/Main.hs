@@ -9,6 +9,7 @@ import System.Directory (getHomeDirectory, doesFileExist)
 import System.Environment
 import System.IO.Strict (readFile)
 import Data.Time
+import Data.List.Extra (lower, isInfixOf)
 
 taskFilename :: IO String
 taskFilename = do
@@ -49,8 +50,10 @@ filterTasks _ [] = []
 filterTasks [] _ = []
 filterTasks (f:fs) ts = do
   case f of
-    Fid i -> taskFromID ts i : filterTasks fs ts
-    Ftext s -> filter (descContains s) ts ++ filterTasks fs ts
+    Fid i   -> taskFromID ts i : filterTasks fs ts
+    Ftext s -> filter (descmatch $ lower s) ts ++ filterTasks fs ts
+  where lowerdesc = (\t -> lower $ desc t)
+        descmatch = (\s t -> s `isInfixOf` lowerdesc t)
 
 printTasks' now ts = do
   putStrLn ""

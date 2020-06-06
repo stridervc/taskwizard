@@ -43,6 +43,7 @@ executables:
     - directory
     - strict
     - time
+    - extra
 
 tests:
   taskwizard-test:
