@@ -52,7 +52,7 @@ filterTasks (f:fs) ts = do
   case f of
     Fid i   -> taskFromID ts i : filterTasks fs ts
     Ftext s -> filter (descmatch $ lower s) ts ++ filterTasks fs ts
-  where lowerdesc = (\t -> lower $ desc t)
+  where lowerdesc = (\t -> lower $ show t)
         descmatch = (\s t -> s `isInfixOf` lowerdesc t)
 
 printTasks' now ts = do
