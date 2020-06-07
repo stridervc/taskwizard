@@ -197,6 +197,9 @@ expr =
   <|> do
     c <- command
     return (c, [], "")
+  <|> do
+    fs <- filters
+    return ("", fs, "")
 
 eval :: String -> (Command, [Filter], Arguments)
 eval xs = case (parse expr xs) of

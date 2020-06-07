@@ -100,6 +100,9 @@ main = do
         ("list", fs, "") ->
           printTasks' now $ filterTasks fs tasks
 
+        ("", fs, "") ->
+          printTasks' now $ filterTasks fs tasks
+
         ("refactor", [], "") ->
           saveActions filename $ tasksToActions $
             refactor now tasks
