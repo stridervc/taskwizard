@@ -325,7 +325,7 @@ printTasks now ts = do
   case s of
     Just s -> do
       let da = width s - iw - sw - pw - (columns-1)
-      let n = height s - 5
+      let n = height s - 3
       if da > mdw + 2 then
         printem (mdw+2) n
       else
