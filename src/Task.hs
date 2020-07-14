@@ -19,12 +19,12 @@ module Task
   , printProjectCounts
   ) where
 
-import Data.Time
-import Data.Sort
 import Data.List
-import System.Console.Terminal.Size (size, width, height)
-import Numeric (showFFloat)
+import Data.Sort
+import Data.Time
+import Numeric                      (showFFloat)
 import System.Console.ANSI
+import System.Console.Terminal.Size (height, size, width)
 
 type Desc     = String
 type ID       = Integer
@@ -40,14 +40,14 @@ type Tasks = [Task]
 type Actions = [Action]
 
 data Task = Task
-  { uid       :: ID
-  , desc      :: Desc
-  , isdone    :: Bool
-  , created   :: UTCTime
-  , depends   :: [ID]
-  , project   :: Project
-  , priority  :: Priority
-  , started   :: Bool
+  { uid      :: ID
+  , desc     :: Desc
+  , isdone   :: Bool
+  , created  :: UTCTime
+  , depends  :: [ID]
+  , project  :: Project
+  , priority :: Priority
+  , started  :: Bool
   } deriving (Eq)
 
 data Action = Add String
@@ -127,6 +127,21 @@ isProperty s = do
         Nothing -> False
         Just _  -> True
 
+-- return task with updated priority (priority as string)
+-- either a new priority (eg: 100)
+-- or an adjustment (eg: +10 or -12)
+adjustPriority :: Task -> String -> Task
+adjustPriority t np
+  | plus      = t { priority = curr + adj }
+  | minus     = t { priority = curr - adj }
+  | otherwise = t { priority = absol }
+  where plus  = fc == '+'
+        minus = fc == '-'
+        fc    = head np
+        adj   = read $ tail np
+        absol = read np
+        curr  = priority t
+
 -- apply iff property
 -- take a task and a string
 -- if the string is a known property (eg uid:1)
@@ -137,14 +152,14 @@ applyProperty t s
     let Just (k',v) = splitProperty s
     let Just k = propertyFromShort k'
     case k of
-      "uid"       -> t {uid = read v}
-      "done"      -> t {isdone = read v} 
-      "created"   -> t {created = read v}
-      "depends"   -> t {depends = uncsv v}
-      "project"   -> t {project = v}
-      "priority"  -> t {priority = read v}
-      "started "  -> t {started = read v}
-      otherwise   -> t
+      "uid"      -> t {uid = read v}
+      "done"     -> t {isdone = read v}
+      "created"  -> t {created = read v}
+      "depends"  -> t {depends = uncsv v}
+      "project"  -> t {project = v}
+      "priority" -> adjustPriority t v
+      "started " -> t {started = read v}
+      otherwise  -> t
   | otherwise = t
 
 instance Show Action where
@@ -177,7 +192,7 @@ addTask ct ts s = t:ts
         w   = words s
         d   = unwords $ filter (not . isProperty) w
 
--- replace a task with the modification
+-- replace a task with the modification.
 -- first, process properties and tags
 -- if anything remains, make it the new desc
 modifyTask :: Tasks -> ID -> String -> Tasks
@@ -363,12 +378,12 @@ compareTasks now ts t1 t2
 
 -- return sorted tasks
 sorted :: UTCTime -> Tasks -> Tasks
-sorted _ [] = []
+sorted _ []   = []
 sorted now ts = sortBy (compareTasks now ts) ts
 
 -- renumber tasks, starting at ID
 renumber :: ID -> Tasks -> Tasks
-renumber _ [] = []
+renumber _ []     = []
 renumber i (t:ts) = t {uid = i} : renumber (i+1) ts
 
 -- remove done and deleted tasks
@@ -378,7 +393,7 @@ refactor now ts = renumber 1 $ sorted now $ todo ts
 
 -- return Add actions for tasks
 tasksToActions :: Tasks -> Actions
-tasksToActions [] = []
+tasksToActions []     = []
 tasksToActions (t:ts) = Add (show t) : tasksToActions ts
 
 taskFromID :: Tasks -> ID -> Task
