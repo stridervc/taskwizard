@@ -48,6 +48,7 @@ data Task = Task
   , project  :: Project
   , priority :: Priority
   , started  :: Bool
+  , due      :: UTCTime
   } deriving (Eq)
 
 data Action = Add String
@@ -66,6 +67,7 @@ properties =  [ "uid"
               , "project"
               , "priority"
               , "started"
+              , "due"
               ]
 
 csv :: (Show a) => [a] -> String
@@ -106,10 +108,12 @@ instance Show Task where
             , propertyString "depends" (depends t) csv []
             , propertyString "project" (project t) id ""
             , propertyString "priority" (priority t) show 0
+            , "due:" ++ dt
             , desc t
             ]
     where i   = show $ uid t
           ct  = spacesToUnderscores $ show $ created t
+          dt  = spacesToUnderscores $ show $ due t
 
 -- return the full name of a property from a shortened form
 propertyFromShort :: String -> Maybe Key
@@ -159,6 +163,7 @@ applyProperty t s
       "project"  -> t {project = v}
       "priority" -> adjustPriority t v
       "started " -> t {started = read v}
+      "due"      -> t {due = read v}
       otherwise  -> t
   | otherwise = t
 
@@ -181,6 +186,7 @@ newTask ct i =
         , project   = ""
         , priority  = 0
         , started   = False
+        , due       = ct
         }
 
 -- parse and add a task to tasks
@@ -290,9 +296,19 @@ padStringLeft w s
   | otherwise = replicate (w-ls) ' ' ++ s
   where ls = length s
 
+-- return a pretty due date time
+-- if due = created, then return ""
+prettyDue :: UTCTime -> Task -> String
+prettyDue now t
+  | ct == dt  = ""
+  | dt == now = ""
+  | otherwise = "some time"
+  where ct  = created t
+        dt  = due t
+
 -- print task
-printTask :: [Width] -> (Task, Score, Bool) -> IO ()
-printTask ws (t,s,hi) = do
+printTask :: UTCTime -> [Width] -> (Task, Score, Bool) -> IO ()
+printTask now ws (t,s,hi) = do
   if started t then
     ansiStarted
   else
@@ -301,31 +317,36 @@ printTask ws (t,s,hi) = do
     else
       ansiReset
 
-  putStr $ spaces [i,p,d,ss]
+  putStr $ spaces [i,p,d,dues,ss]
   ansiReset
   putStrLn ""
 
-  where i   = ic ++ (padStringLeft iw $ show id)
-        p   = pc ++ (padString pw $ project t)
-        d   = dc ++ (padString dw $ desc t)
-        ss  = sc ++ (padStringLeft sw $ prettyNum s)
-        id  = uid t
-        iw  = ws!!0
-        pw  = ws!!1
-        dw  = ws!!2
-        sw  = ws!!3
-        ic  = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid White ]
-        pc  = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
-        sc  = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid Yellow ]
-        dc  = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid White ]
-
+  where i     = ic ++ (padStringLeft iw $ show id)
+        p     = pc ++ (padString pw $ project t)
+        d     = dc ++ (padString dw $ desc t)
+        ss    = sc ++ (padStringLeft sw $ prettyNum s)
+        dues  = duec ++ (padString duew $ prettyDue now t)
+        id    = uid t
+        iw    = ws!!0
+        pw    = ws!!1
+        dw    = ws!!2
+        sw    = ws!!3
+        duew  = ws!!4
+        ic    = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid White ]
+        pc    = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
+        sc    = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid Yellow ]
+        dc    = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid White ]
+        duec  = if (due t > now) then
+                  setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
+                else
+                  setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red ]
 
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
 printTasks _ [] = return ()
 printTasks now ts = do
   s <- size   -- console size
-  let columns = 4
+  let columns = 5
   let tasks = sorted now $ todo ts
   let maxi = foldl1 max $ map uid tasks
   let iw = length $ show maxi
@@ -333,13 +354,14 @@ printTasks now ts = do
   let sw = length $ prettyNum maxs
   let mdw = foldl1 max $ map (length . desc) tasks
   let pw = foldl1 max $ map (length . project) tasks
+  let duew = foldl1 max $ map (length . prettyDue now) tasks
   let scores = map (score now tasks) $ map uid tasks
   let tsh = zip3 tasks scores $ alternateBool False
-  let printem = \dw n -> mapM_ (printTask [iw,pw,dw,sw]) $ take n tsh
+  let printem = \dw n -> mapM_ (printTask now [iw,pw,dw,sw,duew]) $ take n tsh
 
   case s of
     Just s -> do
-      let da = width s - iw - sw - pw - (columns-1)
+      let da = width s - iw - sw - pw - duew - (columns-1)
       let n = height s - 3
       if da > mdw + 2 then
         printem (mdw+2) n
@@ -403,17 +425,19 @@ taskFromID (t:ts) i
 
 -- calculate a score for a task
 score :: UTCTime -> Tasks -> ID -> Score
-score now ts i = times + ds + dc + ps + pri - deps + st
-  where diff  = realToFrac $ diffUTCTime now $ created t
-        times = diff / 60 / 60 / 24
-        d     = dependants ts t
-        ds    = sum $ map (score now ts) d
-        dc    = 0.1 * (fromIntegral $ length d)
-        t     = taskFromID ts i
-        ps    = if project t == "" then 0 else 1
-        pri   = priority t
-        deps  = 0.1 * (fromIntegral $ length $ depends t)
-        st    = if started t then 10 else 0
+score now ts i = times + ds + dc + ps + pri - deps + st + dues
+  where diff    = realToFrac $ diffUTCTime now $ created t
+        times   = diff / 60 / 60 / 24
+        d       = dependants ts t
+        ds      = sum $ map (score now ts) d
+        dc      = 0.1 * (fromIntegral $ length d)
+        t       = taskFromID ts i
+        ps      = if project t == "" then 0 else 1
+        pri     = priority t
+        deps    = 0.1 * (fromIntegral $ length $ depends t)
+        st      = if started t then 10 else 0
+        duediff = realToFrac $ diffUTCTime now (due t)
+        dues    = duediff / 60 / 60 / 24
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []
@@ -454,6 +478,7 @@ taskDetail t = do
   putStrLn $ "Depends : " ++ show (depends t)
   putStrLn $ "Project : " ++ project t
   putStrLn $ "Priority: " ++ show (priority t)
+  putStrLn $ "Due     : " ++ show (due t)
   putStrLn ""
   putStrLn $ desc t
   putStrLn ""
