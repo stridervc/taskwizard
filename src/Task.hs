@@ -48,7 +48,7 @@ data Task = Task
   , project  :: Project
   , priority :: Priority
   , started  :: Bool
-  , due      :: UTCTime
+  , due      :: Maybe UTCTime
   } deriving (Eq)
 
 data Action = Add String
@@ -186,7 +186,7 @@ newTask ct i =
         , project   = ""
         , priority  = 0
         , started   = False
-        , due       = ct
+        , due       = Nothing
         }
 
 -- parse and add a task to tasks
@@ -300,11 +300,13 @@ padStringLeft w s
 -- if due = created, then return ""
 prettyDue :: UTCTime -> Task -> String
 prettyDue now t
+  | none      = ""
   | ct == dt  = ""
   | dt == now = ""
   | otherwise = "some time"
-  where ct  = created t
-        dt  = due t
+  where ct      = created t
+        Just dt = due t
+        none    = due t == Nothing
 
 -- print task
 printTask :: UTCTime -> [Width] -> (Task, Score, Bool) -> IO ()
@@ -321,25 +323,29 @@ printTask now ws (t,s,hi) = do
   ansiReset
   putStrLn ""
 
-  where i     = ic ++ (padStringLeft iw $ show id)
-        p     = pc ++ (padString pw $ project t)
-        d     = dc ++ (padString dw $ desc t)
-        ss    = sc ++ (padStringLeft sw $ prettyNum s)
-        dues  = duec ++ (padString duew $ prettyDue now t)
-        id    = uid t
-        iw    = ws!!0
-        pw    = ws!!1
-        dw    = ws!!2
-        sw    = ws!!3
-        duew  = ws!!4
-        ic    = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid White ]
-        pc    = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
-        sc    = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid Yellow ]
-        dc    = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid White ]
-        duec  = if (due t > now) then
-                  setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
-                else
-                  setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red ]
+  where i         = ic ++ (padStringLeft iw $ show id)
+        p         = pc ++ (padString pw $ project t)
+        d         = dc ++ (padString dw $ desc t)
+        ss        = sc ++ (padStringLeft sw $ prettyNum s)
+        dues      = duec ++ (padString duew $ prettyDue now t)
+        id        = uid t
+        iw        = ws!!0
+        pw        = ws!!1
+        dw        = ws!!2
+        sw        = ws!!3
+        duew      = ws!!4
+        ic        = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid White ]
+        pc        = setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
+        sc        = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid Yellow ]
+        dc        = setSGRCode [ SetConsoleIntensity NormalIntensity, SetColor Foreground Vivid White ]
+        dt        = due t
+        Just dt'  = dt
+        duec      = if dt == Nothing then
+                      setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
+                    else if (dt' > now) then
+                      setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Green ]
+                    else
+                      setSGRCode [ SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red ]
 
 -- print tasks
 printTasks :: UTCTime -> Tasks -> IO ()
@@ -426,18 +432,20 @@ taskFromID (t:ts) i
 -- calculate a score for a task
 score :: UTCTime -> Tasks -> ID -> Score
 score now ts i = times + ds + dc + ps + pri - deps + st + dues
-  where diff    = realToFrac $ diffUTCTime now $ created t
-        times   = diff / 60 / 60 / 24
-        d       = dependants ts t
-        ds      = sum $ map (score now ts) d
-        dc      = 0.1 * (fromIntegral $ length d)
-        t       = taskFromID ts i
-        ps      = if project t == "" then 0 else 1
-        pri     = priority t
-        deps    = 0.1 * (fromIntegral $ length $ depends t)
-        st      = if started t then 10 else 0
-        duediff = realToFrac $ diffUTCTime now (due t)
-        dues    = duediff / 60 / 60 / 24
+  where diff      = realToFrac $ diffUTCTime now $ created t
+        times     = diff / 60 / 60 / 24
+        d         = dependants ts t
+        ds        = sum $ map (score now ts) d
+        dc        = 0.1 * (fromIntegral $ length d)
+        t         = taskFromID ts i
+        ps        = if project t == "" then 0 else 1
+        pri       = priority t
+        deps      = 0.1 * (fromIntegral $ length $ depends t)
+        st        = if started t then 10 else 0
+        dt        = due t
+        Just dt'  = dt
+        duediff   = if dt == Nothing then 0 else realToFrac $ diffUTCTime now dt'
+        dues      = duediff / 60 / 60 / 24
 
 replace :: Char -> Char -> String -> String
 replace _ _ [] = []
