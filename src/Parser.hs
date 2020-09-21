@@ -42,6 +42,7 @@ instance Alternative Parser where
     []        -> parse q inp
     [(v,out)] -> [(v,out)])
 
+-- if a character satisfies predicate, return it parsed
 sat :: (Char -> Bool) -> Parser Char
 sat p = do
   x <- item
@@ -72,22 +73,26 @@ string (x:xs) = do
   string xs
   return (x:xs)
 
+-- an identifier is one or more alphanumerical characters
 ident :: Parser String
 ident = do
   x <- alphanum
   xs <- many alphanum
   return (x:xs)
 
+-- a natural number of 1 or more digits
 nat :: Parser Integer
 nat = do
   xs <- some digit
   return $ read xs
 
+-- zero or more spaces
 space :: Parser ()
 space = do
   many (sat isSpace)
   return ()
 
+-- a natural number optionally preceded by a '-'
 int :: Parser Integer
 int = do
     char '-'
@@ -95,6 +100,8 @@ int = do
     return (-n)
   <|> nat
 
+-- a token is anything preceded and followed by zero or more spaces
+-- eg, a word in a sentence, no spaces in the token
 token :: Parser a -> Parser a
 token p = do
   space
@@ -114,7 +121,9 @@ integer = token int
 symbol :: String -> Parser String
 symbol xs = token (string xs)
 
-command :: Parser String
+type Command = String
+
+command :: Parser Command
 command =
   do
     c <- symbol "help"
@@ -150,6 +159,11 @@ command =
     c <- symbol "projects"
     return c
 
+-- Either a task id or search text
+data Filter = Fid ID
+            | Ftext String
+            deriving (Eq, Show)
+
 tfilter :: Parser Filter
 tfilter =
   do
@@ -168,15 +182,10 @@ filters =
       tfilter)
     return (f:fs)
 
-arguments :: Parser String
-arguments = some item
-
-data Filter = Fid ID
-            | Ftext String
-            deriving (Eq, Show)
-
-type Command = String
 type Arguments = String
+
+arguments :: Parser Arguments
+arguments = some item
 
 -- [filter[,filter[,..]]] [command] [arguments]
 expr :: Parser (Command, [Filter], Arguments)
