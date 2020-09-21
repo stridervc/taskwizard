@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0c9520b594ffa001d79d7ca1dd118df4d3a89959210316c05115721f9420003e
+-- hash: 3fd9b32572991a95fe868b6982f167a3c6b7ae55df836d2b48c03a1e1ef6bb31
 
 name:           taskwizard
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      DateParser
       Parser
       Task
   other-modules:
