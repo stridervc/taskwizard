@@ -10,14 +10,16 @@ strip = id
 -- given now's time, parse string
 parseDate :: ZonedTime -> String -> UTCTime
 parseDate nowz str
-  | s == "yesterday"  = eod $ pred day
-  | s == "today"      = eod day
-  | s == "tomorrow"   = eod $ succ day
+  | s == "yesterday"  = eod yesterday
+  | s == "today"      = eod today
+  | s == "tomorrow"   = eod tomorrow
   where s           = lowercase $ strip str
         now         = zonedTimeToUTC nowz
-        day         = utctDay now
         zone        = zonedTimeZone nowz
         eod         = midnightOfDayToUTC zone
+        today       = utctDay now
+        yesterday   = pred today
+        tomorrow    = succ today
 
 -- take a timezone and a day, and return midnight of that
 -- day expressed in UTC
