@@ -103,12 +103,12 @@ instance Show Task where
   show t =
     spaces  [ "uid:" ++ i
             , "created:" ++ ct
-            , propertyString "done" (isdone t) show False
-            , propertyString "started" (started t) show False
-            , propertyString "depends" (depends t) csv []
-            , propertyString "project" (project t) id ""
-            , propertyString "priority" (priority t) show 0
-            , "due:" ++ dt
+            , propertyString "done"     (isdone t)    show  False
+            , propertyString "started"  (started t)   show  False
+            , propertyString "depends"  (depends t)   csv   []
+            , propertyString "project"  (project t)   id    ""
+            , propertyString "priority" (priority t)  show  0
+            , propertyString "due"      dt            show  "Nothing"
             , desc t
             ]
     where i   = show $ uid t
