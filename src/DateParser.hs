@@ -25,6 +25,7 @@ parseDate nowz str
 -- day expressed in UTC
 midnightOfDayToUTC :: TimeZone -> Day -> UTCTime
 midnightOfDayToUTC zone day = UTCTime day' tod'
-  where (daysOff, tod)  = localToUTCTimeOfDay zone midnight
+  where (daysOff, tod)  = localToUTCTimeOfDay zone midnight'
         day'            = addDays daysOff day
         tod'            = timeOfDayToTime tod
+        midnight'       = TimeOfDay 23 59 59
