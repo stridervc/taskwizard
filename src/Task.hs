@@ -1,6 +1,7 @@
 module Task
   ( Desc
   , ID
+  , Project
   , Tasks
   , Score
   , Actions

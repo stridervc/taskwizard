@@ -10,14 +10,6 @@ import Data.Char
 
 newtype Parser a = P (String -> [(a,String)])
 
-parse :: Parser a -> String -> [(a,String)]
-parse (P p) inp = p inp
-
-item :: Parser Char
-item = P (\inp -> case inp of
-  []      -> []
-  (x:xs)  -> [(x,xs)])
-
 instance Functor Parser where
   fmap g p = P (\inp -> case parse p inp of
     []        -> []
@@ -41,6 +33,14 @@ instance Alternative Parser where
   p <|> q = P (\inp -> case parse p inp of
     []        -> parse q inp
     [(v,out)] -> [(v,out)])
+
+parse :: Parser a -> String -> [(a,String)]
+parse (P p) inp = p inp
+
+item :: Parser Char
+item = P (\inp -> case inp of
+  []      -> []
+  (x:xs)  -> [(x,xs)])
 
 -- if a character satisfies predicate, return it parsed
 sat :: (Char -> Bool) -> Parser Char
@@ -159,9 +159,18 @@ command =
     c <- symbol "projects"
     return c
 
+projectP :: Parser Project
+projectP =
+  do
+    symbol "proj"
+    symbol ":"
+    p <- identifier
+    return p
+
 -- Either a task id or search text
 data Filter = Fid ID
             | Ftext String
+            | Fproject Project
             deriving (Eq, Show)
 
 tfilter :: Parser Filter
@@ -170,7 +179,10 @@ tfilter =
     i <- integer
     return (Fid i)
   <|> do
-    t <- ident
+    p <- projectP
+    return (Fproject p)
+  <|> do
+    t <- identifier
     return (Ftext t)
 
 filters :: Parser [Filter]

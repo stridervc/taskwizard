@@ -50,10 +50,13 @@ filterTasks _ [] = []
 filterTasks [] _ = []
 filterTasks (f:fs) ts = do
   case f of
-    Fid i   -> taskFromID ts i : filterTasks fs ts
-    Ftext s -> filter (descmatch $ lower s) ts ++ filterTasks fs ts
+    Fid i       -> taskFromID ts i : fs'
+    Ftext s     -> filter (descmatch $ lower s) ts ++ fs'
+    Fproject p  -> filter (projmatch $ lower p) ts ++ fs'
   where lowerdesc = (\t -> lower $ show t)
         descmatch = (\s t -> s `isInfixOf` lowerdesc t)
+        projmatch = (\s t -> s `isInfixOf` (lower $ project t))
+        fs'       = filterTasks fs ts
 
 printTasks' now ts = do
   putStrLn ""
