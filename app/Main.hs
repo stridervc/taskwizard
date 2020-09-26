@@ -97,46 +97,50 @@ main = do
     0 -> printTasks' now tasks
     _ -> do
       case eval $ unwords args of
-        ("list", [], "") ->
+        Right ("list", [], "") ->
           printTasks' now tasks
 
-        ("list", fs, "") ->
+        Right ("list", fs, "") ->
           printTasks' now $ filterTasks fs tasks
 
-        ("", fs, "") ->
+        Right ("", fs, "") ->
           printTasks' now $ filterTasks fs tasks
 
-        ("refactor", [], "") ->
+        Right ("refactor", [], "") ->
           saveActions filename $ tasksToActions $
             refactor now tasks
 
-        ("help", [], "") ->
+        Right ("help", [], "") ->
           showHelp
 
-        ("add", [], a) -> do
+        Right ("add", [], a) -> do
           let action = parseAddAction now tasks a
           saveActions filename $ actions ++ [action]
           let nts = tasksFromActions now $ actions ++ [action]
           let nt = head nts
           putStrLn $ "Added task with ID " ++ show (uid nt)
 
-        ("done", fs, "") ->
+        Right ("done", fs, "") ->
           saveActions filename $ actions ++ doneTasks fs tasks
 
-        ("start", fs, "") ->
+        Right ("start", fs, "") ->
           saveActions filename $ actions ++ startTasks fs tasks
 
-        ("stop", fs, "") ->
+        Right ("stop", fs, "") ->
           saveActions filename $ actions ++ stopTasks fs tasks
 
-        ("delete", fs, "") ->
+        Right ("delete", fs, "") ->
           saveActions filename $ actions ++ deleteTasks fs tasks
 
-        ("modify", fs, s) ->
+        Right ("modify", fs, s) ->
           saveActions filename $ actions ++ modifyTasks fs s tasks
 
-        ("show", fs, "") ->
+        Right ("show", fs, "") ->
           mapM_ taskDetail $ filterTasks fs tasks
 
-        ("projects", [], "") ->
+        Right ("projects", [], "") ->
           printProjectCounts tasks
+
+        Left errmsg ->
+          putStrLn errmsg
+

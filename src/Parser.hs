@@ -121,44 +121,6 @@ integer = token int
 symbol :: String -> Parser String
 symbol xs = token (string xs)
 
-type Command = String
-
-command :: Parser Command
-command =
-  do
-    c <- symbol "help"
-    return c
-  <|> do
-    c <- symbol "list"
-    return c
-  <|> do
-    c <- symbol "ls"
-    return "list"
-  <|> do
-    c <- symbol "add"
-    return c
-  <|> do
-    c <- symbol "start"
-    return c
-  <|> do
-    c <- symbol "stop"
-    return c
-  <|> do
-    c <- symbol "done"
-    return c
-  <|> do
-    c <- symbol "delete"
-    return c
-  <|> do
-    c <- symbol "modify"
-    return c
-  <|> do
-    c <- symbol "show"
-    return c
-  <|> do
-    c <- symbol "projects"
-    return c
-
 projectP :: Parser Project
 projectP =
   do
@@ -199,31 +161,52 @@ type Arguments = String
 arguments :: Parser Arguments
 arguments = some item
 
+type Command = String
+
 -- [filter[,filter[,..]]] [command] [arguments]
 expr :: Parser (Command, [Filter], Arguments)
 expr =
   do
+    c <- symbol "help"
+    return (c, [], "")
+  <|> do
+    c <- symbol "projects"
+    return (c, [], "")
+  -- commands that require filters and no arguments
+  <|> do
     fs <- filters
-    c <- command
+    c <-  (   symbol "start"
+          <|> symbol "stop"
+          <|> symbol "done"
+          <|> symbol "delete"
+          <|> symbol "show"
+          )
+    return (c,fs,"")
+  -- commands that require both a filter and arguments
+  <|> do
+    fs <- filters
+    c <- symbol "modify"
     args <- arguments
     return (c, fs, args)
+  -- list with filters and command
   <|> do
     fs <- filters
-    c <- command
-    return (c, fs, "")
+    c <- (symbol "list" <|> symbol "ls")
+    return ("list", fs, "")
+  -- commands that require no filters but do require arguments
   <|> do
-    c <- command
+    c <- symbol "add"
     args <- arguments
     return (c, [], args)
   <|> do
-    c <- command
-    return (c, [], "")
+    c <- (symbol "list" <|> symbol "ls")
+    return ("list", [], "")
   <|> do
     fs <- filters
-    return ("", fs, "")
+    return ("list", fs, "")
 
-eval :: String -> (Command, [Filter], Arguments)
+eval :: String -> Either String (Command, [Filter], Arguments)
 eval xs = case (parse expr xs) of
-  [(p,[])]  -> p
-  [(_,out)] -> error ("Unused input: " ++ out)
-  []        -> error ("Invalid input")
+  [(p,[])]  -> Right p
+  [(_,out)] -> Left $ "Unused input: " ++ out
+  []        -> Left $ "Invalid input"
