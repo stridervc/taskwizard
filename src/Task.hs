@@ -434,7 +434,8 @@ taskFromID (t:ts) i
 score :: UTCTime -> Tasks -> ID -> Score
 score now ts i = times + ds + dc + ps + pri - deps + st + dues
   where diff      = realToFrac $ diffUTCTime now $ created t
-        times     = diff / 60 / 60 / 24
+        times     = diff / 60 / 60 / 24 * timesf
+        timesf    = 0.01
         d         = dependants ts t
         ds        = sum $ map (score now ts) d
         dc        = 0.1 * (fromIntegral $ length d)
