@@ -136,7 +136,7 @@ main = do
           saveActions filename $ actions ++ modifyTasks fs s tasks
 
         Right ("show", fs, "") ->
-          mapM_ taskDetail $ filterTasks fs tasks
+          mapM_ (taskDetail tasks) $ filterTasks fs tasks
 
         Right ("projects", [], "") ->
           printProjectCounts tasks

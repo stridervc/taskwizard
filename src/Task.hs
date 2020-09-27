@@ -478,16 +478,17 @@ ansiOddRow = setSGR [ SetConsoleIntensity NormalIntensity
                     ]
 
 -- print task detail
-taskDetail :: Task -> IO ()
-taskDetail t = do
-  putStrLn $ "UID     : " ++ show (uid t)
-  putStrLn $ "Done    : " ++ show (isdone t)
-  putStrLn $ "Started : " ++ show (started t)
-  putStrLn $ "Created : " ++ show (created t)
-  putStrLn $ "Depends : " ++ show (depends t)
-  putStrLn $ "Project : " ++ project t
-  putStrLn $ "Priority: " ++ show (priority t)
-  putStrLn $ "Due     : " ++ show (due t)
+taskDetail :: Tasks -> Task -> IO ()
+taskDetail ts t = do
+  putStrLn $ "UID         : " ++ show (uid t)
+  putStrLn $ "Done        : " ++ show (isdone t)
+  putStrLn $ "Started     : " ++ show (started t)
+  putStrLn $ "Created     : " ++ show (created t)
+  putStrLn $ "Depends     : " ++ show (depends t)
+  putStrLn $ "Dependants  : " ++ show (dependants ts t)
+  putStrLn $ "Project     : " ++ project t
+  putStrLn $ "Priority    : " ++ show (priority t)
+  putStrLn $ "Due         : " ++ show (due t)
   putStrLn ""
   putStrLn $ desc t
   putStrLn ""
